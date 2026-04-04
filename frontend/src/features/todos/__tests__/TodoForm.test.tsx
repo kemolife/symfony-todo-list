@@ -30,7 +30,7 @@ describe('TodoForm', () => {
     const onSuccess = vi.fn()
     renderForm({ onSuccess })
 
-    await user.type(screen.getByPlaceholderText('Todo name *'), 'New todo')
+    await user.type(screen.getByPlaceholderText('What needs to be done?'), 'New todo')
     await user.click(screen.getByRole('button', { name: /create/i }))
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce())

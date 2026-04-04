@@ -27,7 +27,8 @@ describe('TodoList', () => {
 
   it('shows loading state initially', () => {
     renderTodoList()
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    // Skeleton components are rendered during loading (no text, just animated placeholders)
+    expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0)
   })
 
   it('opens create modal when New Todo is clicked', async () => {
@@ -35,9 +36,9 @@ describe('TodoList', () => {
     renderTodoList()
 
     await screen.findByText('Test todo')
-    await user.click(screen.getByText('+ New Todo'))
+    await user.click(screen.getByRole('button', { name: /new todo/i }))
 
-    expect(screen.getByText('New Todo')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'New todo' })).toBeInTheDocument()
   })
 
   it('shows done status badge', async () => {
