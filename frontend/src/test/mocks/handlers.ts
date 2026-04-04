@@ -23,7 +23,7 @@ export const mockDoneTodo: Todo = {
 
 export const handlers = [
   http.get('http://localhost:8000/api/todos', () =>
-    HttpResponse.json([mockTodo, mockDoneTodo]),
+    HttpResponse.json({ items: [mockTodo, mockDoneTodo], total: 2, page: 1, limit: 10, pages: 1 }),
   ),
   http.get('http://localhost:8000/api/todos/tags', () =>
     HttpResponse.json(['work']),

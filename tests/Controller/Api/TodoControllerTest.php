@@ -44,7 +44,31 @@ final class TodoControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $data = json_decode($client->getResponse()->getContent(), true);
-        self::assertCount(2, $data);
+        self::assertArrayHasKey('items', $data);
+        self::assertArrayHasKey('total', $data);
+        self::assertArrayHasKey('page', $data);
+        self::assertArrayHasKey('limit', $data);
+        self::assertArrayHasKey('pages', $data);
+        self::assertCount(2, $data['items']);
+        self::assertSame(2, $data['total']);
+        self::assertSame(1, $data['page']);
+    }
+
+    public function testListPagination(): void
+    {
+        $client = $this->client;
+        for ($i = 1; $i <= 15; ++$i) {
+            $this->createTodo("Todo $i");
+        }
+
+        $client->request('GET', '/api/todos?page=2&limit=10');
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode($client->getResponse()->getContent(), true);
+        self::assertCount(5, $data['items']);
+        self::assertSame(15, $data['total']);
+        self::assertSame(2, $data['page']);
+        self::assertSame(2, $data['pages']);
     }
 
     public function testListFilterByStatus(): void
@@ -57,8 +81,8 @@ final class TodoControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $data = json_decode($client->getResponse()->getContent(), true);
-        self::assertCount(1, $data);
-        self::assertSame('done', $data[0]['status']);
+        self::assertCount(1, $data['items']);
+        self::assertSame('done', $data['items'][0]['status']);
     }
 
     public function testListFilterByTag(): void
@@ -71,8 +95,8 @@ final class TodoControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $data = json_decode($client->getResponse()->getContent(), true);
-        self::assertCount(1, $data);
-        self::assertSame('work', $data[0]['tag']);
+        self::assertCount(1, $data['items']);
+        self::assertSame('work', $data['items'][0]['tag']);
     }
 
     public function testListFilterBySearch(): void
@@ -85,8 +109,8 @@ final class TodoControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         $data = json_decode($client->getResponse()->getContent(), true);
-        self::assertCount(1, $data);
-        self::assertSame('Buy groceries', $data[0]['name']);
+        self::assertCount(1, $data['items']);
+        self::assertSame('Buy groceries', $data['items'][0]['name']);
     }
 
     public function testGetOne(): void

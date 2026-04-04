@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/axios'
-import type { CreateTodoInput, Todo, TodoFilters, UpdateTodoInput } from '../types/todo'
+import type { CreateTodoInput, PaginatedResponse, Todo, TodoFilters, UpdateTodoInput } from '../types/todo'
 
 const TODOS_KEY = 'todos'
 
@@ -12,8 +12,10 @@ export function useTodos(filters: TodoFilters = {}) {
       if (filters.status) params['status'] = filters.status
       if (filters.tag) params['tag'] = filters.tag
       if (filters.search) params['search'] = filters.search
+      if (filters.page) params['page'] = String(filters.page)
+      if (filters.limit) params['limit'] = String(filters.limit)
 
-      const { data } = await api.get<Todo[]>('/api/todos', { params })
+      const { data } = await api.get<PaginatedResponse<Todo>>('/api/todos', { params })
       return data
     },
   })

@@ -14,6 +14,16 @@ export interface TodoFilters {
   status?: TodoStatus
   tag?: string
   search?: string
+  page?: number
+  limit?: number
+}
+
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  limit: number
+  pages: number
 }
 
 export interface CreateTodoInput {

@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\ToDoList;
 use App\Enum\TodoStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -22,26 +23,22 @@ final class ToDoListRepository extends ServiceEntityRepository
     /**
      * @return ToDoList[]
      */
-    public function findFiltered(?string $status, ?string $tag, ?string $search): array
+    public function findFiltered(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10): array
     {
-        $qb = $this->createQueryBuilder('t');
+        return $this->buildFilteredQuery($status, $tag, $search)
+            ->orderBy('t.createdAt', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 
-        if ($status !== null && TodoStatus::tryFrom($status) !== null) {
-            $qb->andWhere('t.status = :status')
-                ->setParameter('status', $status);
-        }
-
-        if ($tag !== null && $tag !== '') {
-            $qb->andWhere('t.tag = :tag')
-                ->setParameter('tag', $tag);
-        }
-
-        if ($search !== null && $search !== '') {
-            $qb->andWhere('t.name LIKE :search OR t.description LIKE :search')
-                ->setParameter('search', '%'.$search.'%');
-        }
-
-        return $qb->orderBy('t.createdAt', 'DESC')->getQuery()->getResult();
+    public function countFiltered(?string $status, ?string $tag, ?string $search): int
+    {
+        return (int) $this->buildFilteredQuery($status, $tag, $search)
+            ->select('COUNT(t.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**
@@ -55,5 +52,27 @@ final class ToDoListRepository extends ServiceEntityRepository
             ->orderBy('t.tag', 'ASC')
             ->getQuery()
             ->getSingleColumnResult();
+    }
+
+    private function buildFilteredQuery(?string $status, ?string $tag, ?string $search): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('t');
+
+        if (null !== $status && null !== TodoStatus::tryFrom($status)) {
+            $qb->andWhere('t.status = :status')
+                ->setParameter('status', $status);
+        }
+
+        if (null !== $tag && '' !== $tag) {
+            $qb->andWhere('t.tag = :tag')
+                ->setParameter('tag', $tag);
+        }
+
+        if (null !== $search && '' !== $search) {
+            $qb->andWhere('t.name LIKE :search OR t.description LIKE :search')
+                ->setParameter('search', '%'.$search.'%');
+        }
+
+        return $qb;
     }
 }

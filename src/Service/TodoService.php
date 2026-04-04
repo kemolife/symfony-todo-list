@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\DTO\Request\TodoRequest;
+use App\DTO\Response\PaginatedTodoResponse;
 use App\DTO\Response\TodoResponse;
 use App\Entity\ToDoList;
 use App\Repository\ToDoListRepository;
@@ -16,16 +17,23 @@ final class TodoService
     public function __construct(
         private readonly ToDoListRepository $repository,
         private readonly EntityManagerInterface $em,
-    ) {}
+    ) {
+    }
 
-    /**
-     * @return TodoResponse[]
-     */
-    public function findAll(?string $status, ?string $tag, ?string $search): array
+    public function findAll(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10): PaginatedTodoResponse
     {
-        return array_map(
+        $total = $this->repository->countFiltered($status, $tag, $search);
+        $items = array_map(
             TodoResponse::fromEntity(...),
-            $this->repository->findFiltered($status, $tag, $search),
+            $this->repository->findFiltered($status, $tag, $search, $page, $limit),
+        );
+
+        return new PaginatedTodoResponse(
+            items: $items,
+            total: $total,
+            page: $page,
+            limit: $limit,
+            pages: $total > 0 ? (int) ceil($total / $limit) : 1,
         );
     }
 
@@ -36,12 +44,12 @@ final class TodoService
 
     public function create(TodoRequest $dto): TodoResponse
     {
-        $todo = (new ToDoList())
+        $todo = new ToDoList()
             ->setName($dto->name)
             ->setDescription($dto->description)
             ->setTag($dto->tag);
 
-        if ($dto->status !== null) {
+        if (null !== $dto->status) {
             $todo->setStatus($dto->status);
         }
 
@@ -59,7 +67,7 @@ final class TodoService
             ->setDescription($dto->description)
             ->setTag($dto->tag);
 
-        if ($dto->status !== null) {
+        if (null !== $dto->status) {
             $todo->setStatus($dto->status);
         }
 

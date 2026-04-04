@@ -16,7 +16,8 @@ final readonly class TodoResponse
         public string $status,
         public string $createdAt,
         public string $updatedAt,
-    ) {}
+    ) {
+    }
 
     public static function fromEntity(ToDoList $todo): self
     {

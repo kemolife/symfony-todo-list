@@ -16,7 +16,9 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api/todos', name: 'api_todos')]
 final class TodoController extends AbstractController
 {
-    public function __construct(private readonly TodoService $todoService) {}
+    public function __construct(private readonly TodoService $todoService)
+    {
+    }
 
     // IMPORTANT: /tags must be declared BEFORE /{id} to avoid routing conflict
     #[Route('/tags', name: '_tags', methods: ['GET'])]
@@ -28,13 +30,16 @@ final class TodoController extends AbstractController
     #[Route('', name: '_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        $todos = $this->todoService->findAll(
+        $page = max(1, $request->query->getInt('page', 1));
+        $limit = min(100, max(1, $request->query->getInt('limit', 10)));
+
+        return $this->json($this->todoService->findAll(
             status: $request->query->get('status'),
             tag: $request->query->get('tag'),
             search: $request->query->get('search'),
-        );
-
-        return $this->json($todos);
+            page: $page,
+            limit: $limit,
+        ));
     }
 
     #[Route('', name: '_create', methods: ['POST'])]
