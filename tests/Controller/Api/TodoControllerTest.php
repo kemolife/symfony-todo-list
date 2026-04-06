@@ -7,13 +7,14 @@ namespace App\Tests\Controller\Api;
 use App\Entity\ToDoList;
 use App\Enum\TodoStatus;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
 final class TodoControllerTest extends WebTestCase
 {
     private EntityManagerInterface $em;
-    private \Symfony\Bundle\FrameworkBundle\KernelBrowser $client;
+    private KernelBrowser $client;
 
     protected function setUp(): void
     {
