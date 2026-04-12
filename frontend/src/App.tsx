@@ -1,12 +1,40 @@
 import { Routes, Route } from 'react-router-dom'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminRoute } from './components/AdminRoute'
 import { TodoList } from './features/todos/TodoList'
+import { LoginPage } from './features/auth/LoginPage'
+import { RegisterPage } from './features/auth/RegisterPage'
+import { AdminRegisterPage } from './features/auth/AdminRegisterPage'
+import { TwoFactorPage } from './features/auth/TwoFactorPage'
+import { AdminLayout } from './features/admin/AdminLayout'
+import { DashboardOverview } from './features/admin/DashboardOverview'
+import { UsersPage } from './features/admin/UsersPage'
 
 export default function App() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <Routes>
-        <Route path="/" element={<TodoList />} />
-      </Routes>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/admin/register" element={<AdminRegisterPage />} />
+      <Route path="/auth/2fa" element={<TwoFactorPage />} />
+
+      <Route element={<ProtectedRoute />}>
+        <Route
+          path="/"
+          element={
+            <div className="mx-auto max-w-2xl px-4 py-8">
+              <TodoList />
+            </div>
+          }
+        />
+      </Route>
+
+      <Route element={<AdminRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route path="/dashboard" element={<DashboardOverview />} />
+          <Route path="/dashboard/users" element={<UsersPage />} />
+        </Route>
+      </Route>
+    </Routes>
   )
 }

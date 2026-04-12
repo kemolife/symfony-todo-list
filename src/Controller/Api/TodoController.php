@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\DTO\Request\TodoRequest;
+use App\Entity\User;
+use App\Security\TodoVoter;
 use App\Service\TodoService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -45,7 +47,10 @@ final class TodoController extends AbstractController
     #[Route('', name: '_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] TodoRequest $dto): JsonResponse
     {
-        return $this->json($this->todoService->create($dto), Response::HTTP_CREATED);
+        /** @var User $user */
+        $user = $this->getUser();
+
+        return $this->json($this->todoService->create($dto, $user), Response::HTTP_CREATED);
     }
 
     #[Route('/{id}', name: '_one', methods: ['GET'])]
@@ -57,12 +62,18 @@ final class TodoController extends AbstractController
     #[Route('/{id}', name: '_update', methods: ['PUT'])]
     public function update(int $id, #[MapRequestPayload] TodoRequest $dto): JsonResponse
     {
+        $todo = $this->todoService->getEntity($id);
+        $this->denyAccessUnlessGranted(TodoVoter::EDIT, $todo);
+
         return $this->json($this->todoService->update($id, $dto));
     }
 
     #[Route('/{id}', name: '_delete', methods: ['DELETE'])]
     public function delete(int $id): Response
     {
+        $todo = $this->todoService->getEntity($id);
+        $this->denyAccessUnlessGranted(TodoVoter::DELETE, $todo);
+
         $this->todoService->delete($id);
 
         return new Response(null, Response::HTTP_NO_CONTENT);

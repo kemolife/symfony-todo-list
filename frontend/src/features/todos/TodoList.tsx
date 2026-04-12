@@ -1,14 +1,16 @@
 import { useTodos } from '@/api/useTodos'
 import { useModalStore } from '@/store/modalStore'
 import { useTodoFilterStore } from '@/store/todoFilterStore'
+import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, ClipboardList, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, ClipboardList, ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
 import { TodoCard } from './TodoCard'
 import { TodoFilters } from './TodoFilters'
 import { TodoForm } from './TodoForm'
+import { useNavigate } from 'react-router-dom'
 
 function TodoSkeleton() {
   return (
@@ -87,6 +89,13 @@ export function TodoList() {
   const setPage = useTodoFilterStore((s) => s.setPage)
   const { data: paginated, isLoading, error } = useTodos(filters)
   const { isCreateOpen, editingTodoId, openCreate, close } = useModalStore()
+  const clearToken = useAuthStore((s) => s.clearToken)
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    clearToken()
+    navigate('/login')
+  }
 
   const todos = paginated?.items
   const page = paginated?.page ?? 1
@@ -106,10 +115,15 @@ export function TodoList() {
             </span>
           )}
         </div>
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New todo
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={openCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New todo
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleLogout} title="Sign out">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       <Separator />

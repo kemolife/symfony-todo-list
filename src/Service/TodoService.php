@@ -8,6 +8,7 @@ use App\DTO\Request\TodoRequest;
 use App\DTO\Response\PaginatedTodoResponse;
 use App\DTO\Response\TodoResponse;
 use App\Entity\ToDoList;
+use App\Entity\User;
 use App\Repository\ToDoListRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -42,12 +43,13 @@ final class TodoService
         return TodoResponse::fromEntity($this->findOrFail($id));
     }
 
-    public function create(TodoRequest $dto): TodoResponse
+    public function create(TodoRequest $dto, ?User $owner = null): TodoResponse
     {
         $todo = new ToDoList()
             ->setName($dto->name)
             ->setDescription($dto->description)
-            ->setTag($dto->tag);
+            ->setTag($dto->tag)
+            ->setOwner($owner);
 
         if (null !== $dto->status) {
             $todo->setStatus($dto->status);
@@ -87,6 +89,11 @@ final class TodoService
     public function findAllTags(): array
     {
         return $this->repository->findAllTags();
+    }
+
+    public function getEntity(int $id): ToDoList
+    {
+        return $this->findOrFail($id);
     }
 
     private function findOrFail(int $id): ToDoList
