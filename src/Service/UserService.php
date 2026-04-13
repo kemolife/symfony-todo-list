@@ -10,8 +10,8 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Totp\TotpAuthenticatorInterface;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class UserService
 {
@@ -24,7 +24,7 @@ final class UserService
 
     public function create(RegisterRequest $registerRequest): User
     {
-        if ($this->userRepository->findOneBy(['email' => $registerRequest->email]) !== null) {
+        if (null !== $this->userRepository->findOneBy(['email' => $registerRequest->email])) {
             throw new ConflictHttpException('Email already taken');
         }
 
@@ -39,7 +39,7 @@ final class UserService
 
     public function createAdmin(CreateAdminRequest $createAdminRequest): User
     {
-        if ($this->userRepository->findOneBy(['email' => $createAdminRequest->email]) !== null) {
+        if (null !== $this->userRepository->findOneBy(['email' => $createAdminRequest->email])) {
             throw new ConflictHttpException('Email already taken');
         }
 
@@ -56,7 +56,7 @@ final class UserService
 
     public function createByAdmin(CreateUserRequest $request): User
     {
-        if ($this->userRepository->findOneBy(['email' => $request->email]) !== null) {
+        if (null !== $this->userRepository->findOneBy(['email' => $request->email])) {
             throw new ConflictHttpException('Email already taken');
         }
 
@@ -77,7 +77,7 @@ final class UserService
     public function getUser(int $id): User
     {
         $user = $this->userRepository->find($id);
-        if ($user === null) {
+        if (null === $user) {
             throw new NotFoundHttpException('User not found');
         }
 
@@ -88,7 +88,7 @@ final class UserService
     {
         $user = $this->getUser($id);
         $user->setEmail($updateUserRequest->email);
-        if ($updateUserRequest->password !== '') {
+        if ('' !== $updateUserRequest->password) {
             $user->setPassword($this->passwordHasher->hashPassword($user, $updateUserRequest->password));
         }
         $this->userRepository->save($user);

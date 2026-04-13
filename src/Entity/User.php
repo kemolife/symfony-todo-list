@@ -132,7 +132,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
 
     public function isTotpAuthenticationEnabled(): bool
     {
-        return $this->topSecret !== null;
+        return null !== $this->topSecret;
     }
 
     public function getTotpAuthenticationUsername(): string
@@ -142,7 +142,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
 
     public function getTotpAuthenticationConfiguration(): ?TotpConfigurationInterface
     {
-        if ($this->topSecret === null) {
+        if (null === $this->topSecret) {
             return null;
         }
 

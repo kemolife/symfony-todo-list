@@ -13,7 +13,7 @@ final class UpdateUserRequest
 
     #[Assert\When(
         expression: 'value !== ""',
-        constraints: [new StrongPassword],
+        constraints: [new StrongPassword()],
     )]
     public string $password = '';
 }

@@ -15,4 +15,4 @@ final class CreateUserRequest
 
     #[StrongPassword]
     public string $password = '';
-}   
+}

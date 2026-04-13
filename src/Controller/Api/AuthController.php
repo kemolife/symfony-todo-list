@@ -50,7 +50,7 @@ final class AuthController extends AbstractController
 
         $user = $this->userRepository->findOneBy(['email' => $item->get()]);
 
-        if ($user === null || !$this->totpAuthenticator->checkCode($user, $request->code)) {
+        if (null === $user || !$this->totpAuthenticator->checkCode($user, $request->code)) {
             throw new UnauthorizedHttpException('Bearer', 'Invalid 2fa code');
         }
 
@@ -72,7 +72,7 @@ final class AuthController extends AbstractController
     public function logout(): JsonResponse
     {
         $this->jwtManager->logout($this->getUser());
-        
+
         return $this->json(['message' => 'Logged out successfully']);
     }
 }

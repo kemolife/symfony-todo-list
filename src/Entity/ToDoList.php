@@ -7,7 +7,6 @@ namespace App\Entity;
 use App\Enum\TodoStatus;
 use App\Repository\ToDoListRepository;
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\User;
 
 #[ORM\Entity(repositoryClass: ToDoListRepository::class)]
 #[ORM\HasLifecycleCallbacks]

@@ -9,7 +9,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AdminControllerTest extends WebTestCase
 {
@@ -46,7 +45,7 @@ final class AdminControllerTest extends WebTestCase
         ], $overrides);
     }
 
-    public function test_create_admin_returns_token_and_totp_data(): void
+    public function testCreateAdminReturnsTokenAndTotpData(): void
     {
         $this->postJson('/api/admin/register', $this->validPayload());
 
@@ -60,14 +59,14 @@ final class AdminControllerTest extends WebTestCase
         self::assertStringStartsWith('otpauth://totp/', $data['totp_uri']);
     }
 
-    public function test_create_admin_fails_with_wrong_secret(): void
+    public function testCreateAdminFailsWithWrongSecret(): void
     {
         $this->postJson('/api/admin/register', $this->validPayload(['admin_secret' => 'wrong-secret']));
 
         self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
     }
 
-    public function test_create_admin_fails_with_duplicate_email(): void
+    public function testCreateAdminFailsWithDuplicateEmail(): void
     {
         $this->postJson('/api/admin/register', $this->validPayload());
         $this->postJson('/api/admin/register', $this->validPayload());
@@ -75,7 +74,7 @@ final class AdminControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
     }
 
-    public function test_create_admin_fails_with_weak_password(): void
+    public function testCreateAdminFailsWithWeakPassword(): void
     {
         $this->postJson('/api/admin/register', $this->validPayload([
             'password' => 'weakpassword',
@@ -85,7 +84,7 @@ final class AdminControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-    public function test_created_user_has_admin_role(): void
+    public function testCreatedUserHasAdminRole(): void
     {
         $this->postJson('/api/admin/register', $this->validPayload());
 

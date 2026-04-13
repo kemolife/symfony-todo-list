@@ -47,7 +47,7 @@ final class AuthControllerTest extends WebTestCase
         );
     }
 
-    public function test_register_creates_user_and_returns_token(): void
+    public function testRegisterCreatesUserAndReturnsToken(): void
     {
         $this->postJson('/api/auth/register', [
             'email' => 'new@test.com',
@@ -61,7 +61,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertNotEmpty($data['token']);
     }
 
-    public function test_register_fails_with_invalid_email(): void
+    public function testRegisterFailsWithInvalidEmail(): void
     {
         $this->postJson('/api/auth/register', [
             'email' => 'not-an-email',
@@ -72,7 +72,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
-    public function test_register_fails_when_email_already_taken(): void
+    public function testRegisterFailsWhenEmailAlreadyTaken(): void
     {
         $this->createUser('existing@test.com', 'Password1!');
 
@@ -85,7 +85,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
     }
 
-    public function test_login_returns_token(): void
+    public function testLoginReturnsToken(): void
     {
         $this->createUser('login@test.com', 'Password1!');
 
@@ -100,7 +100,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertNotEmpty($data['token']);
     }
 
-    public function test_login_fails_with_wrong_password(): void
+    public function testLoginFailsWithWrongPassword(): void
     {
         $this->createUser('user@test.com', 'Password1!');
 
@@ -112,7 +112,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
-    public function test_admin_login_returns_pre_auth_token(): void
+    public function testAdminLoginReturnsPreAuthToken(): void
     {
         $adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
 
@@ -134,7 +134,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertNotEmpty($data['pre_auth_token']);
     }
 
-    public function test_2fa_check_returns_token_with_valid_code(): void
+    public function test2faCheckReturnsTokenWithValidCode(): void
     {
         $adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
 
@@ -169,7 +169,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertNotEmpty($data['token']);
     }
 
-    public function test_2fa_check_fails_with_wrong_code(): void
+    public function test2faCheckFailsWithWrongCode(): void
     {
         $adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
 
@@ -195,7 +195,7 @@ final class AuthControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
-    public function test_2fa_check_fails_with_invalid_pre_auth_token(): void
+    public function test2faCheckFailsWithInvalidPreAuthToken(): void
     {
         $this->postJson('/api/auth/2fa/check', [
             'pre_auth_token' => 'invalid-token',
