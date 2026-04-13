@@ -7,6 +7,7 @@ namespace App\Tests\Controller\Api;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use OTPHP\TOTP;
+use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Totp\TotpAuthenticatorInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
@@ -203,5 +204,116 @@ final class AuthControllerTest extends WebTestCase
         ]);
 
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+    }
+
+    // --- 2FA setup / confirm (for users promoted to admin) ---
+
+    private function createPendingAdmin(string $email = 'pending@test.com'): User
+    {
+        $totp = static::getContainer()->get(TotpAuthenticatorInterface::class);
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $user = new User();
+        $user->setEmail($email);
+        $user->setPassword($hasher->hashPassword($user, 'Password1!'));
+        $user->setRoles(['ROLE_ADMIN']);
+        $user->setTopSecret($totp->generateSecret());
+        // twoFactorConfirmed stays false — pending setup
+        $this->em->persist($user);
+        $this->em->flush();
+
+        return $user;
+    }
+
+    public function testSetupReturnsQrCodeForUnconfirmedAdmin(): void
+    {
+        $user = $this->createPendingAdmin();
+        $this->client->loginUser($user);
+
+        $this->client->request('GET', '/api/auth/2fa/setup');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertArrayHasKey('totp_uri', $data);
+        self::assertArrayHasKey('totp_secret', $data);
+        self::assertStringStartsWith('otpauth://totp/', $data['totp_uri']);
+    }
+
+    public function testSetupReturnsConflictWhenAlreadyConfirmed(): void
+    {
+        $adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
+        $this->postJson('/api/admin/register', [
+            'email' => 'confirmed@test.com',
+            'password' => 'Password1!',
+            'password_confirmation' => 'Password1!',
+            'admin_secret' => $adminSecret,
+        ]);
+
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'confirmed@test.com']);
+        $this->client->loginUser($user);
+
+        $this->client->request('GET', '/api/auth/2fa/setup');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
+    }
+
+    public function testSetupRequiresAdminRole(): void
+    {
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $user = new User();
+        $user->setEmail('regular@test.com');
+        $user->setPassword($hasher->hashPassword($user, 'Password1!'));
+        $this->em->persist($user);
+        $this->em->flush();
+        $this->client->loginUser($user);
+
+        $this->client->request('GET', '/api/auth/2fa/setup');
+
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+    }
+
+    public function testConfirmWithValidCodeSetsConfirmed(): void
+    {
+        $user = $this->createPendingAdmin('confirm_ok@test.com');
+        $totpSecret = $user->getTopSecret();
+        $this->client->loginUser($user);
+
+        $code = TOTP::createFromSecret($totpSecret)->now();
+        $this->postJson('/api/auth/2fa/confirm', ['code' => $code]);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_OK);
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertSame('2FA confirmed successfully', $data['message']);
+
+        $this->em->refresh($user);
+        self::assertTrue($user->isTwoFactorConfirmed());
+        self::assertTrue($user->isTotpAuthenticationEnabled());
+    }
+
+    public function testConfirmWithInvalidCodeReturns401(): void
+    {
+        $user = $this->createPendingAdmin('confirm_fail@test.com');
+        $this->client->loginUser($user);
+
+        $this->postJson('/api/auth/2fa/confirm', ['code' => '000000']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
+
+        $this->em->refresh($user);
+        self::assertFalse($user->isTwoFactorConfirmed());
+    }
+
+    public function testUnconfirmedAdminReceivesJwtDirectlyOnLogin(): void
+    {
+        $this->createPendingAdmin('unconfirmed_login@test.com');
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'unconfirmed_login@test.com',
+            'password' => 'Password1!',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode($this->client->getResponse()->getContent(), true);
+        self::assertArrayHasKey('token', $data, 'Unconfirmed admin should get JWT directly, not a 2FA challenge');
+        self::assertArrayNotHasKey('pre_auth_token', $data);
     }
 }

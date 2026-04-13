@@ -1,5 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, LogOut } from 'lucide-react'
+import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, Users, LogOut, ListTodo } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -7,11 +7,17 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/dashboard/users', label: 'Users', icon: Users, end: false },
+  { to: '/dashboard/todos', label: 'Todos', icon: ListTodo, end: false },
 ]
 
 export function AdminLayout() {
   const navigate = useNavigate()
   const clearToken = useAuthStore((s) => s.clearToken)
+  const needsTwoFactorSetup = useAuthStore((s) => s.needsTwoFactorSetup)
+
+  if (needsTwoFactorSetup) {
+    return <Navigate to="/dashboard/2fa/setup" replace />
+  }
 
   const handleLogout = () => {
     clearToken()

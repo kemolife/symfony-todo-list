@@ -16,4 +16,7 @@ final class UpdateUserRequest
         constraints: [new StrongPassword()],
     )]
     public string $password = '';
+
+    #[Assert\Choice(choices: ['admin', 'user'], message: 'Role must be admin or user')]
+    public ?string $role = null;
 }

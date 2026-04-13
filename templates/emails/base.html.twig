@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{% endblock %}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:ui-sans-serif,system-ui,sans-serif;color:#1a1a1a;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#ffffff;border-radius:8px;border:1px solid #e4e4e7;overflow:hidden;">
+
+          {# Header #}
+          <tr>
+            <td style="padding:24px 32px;border-bottom:1px solid #e4e4e7;">
+              <span style="font-size:1rem;font-weight:700;color:#09090b;">
+                {% block app_name %}MyApp{% endblock %}
+              </span>
+            </td>
+          </tr>
+
+          {# Body #}
+          <tr>
+            <td style="padding:32px;">
+              {% block body %}{% endblock %}
+            </td>
+          </tr>
+
+          {# Footer #}
+          <tr>
+            <td style="padding:16px 32px;border-top:1px solid #e4e4e7;background:#fafafa;">
+              <p style="margin:0;font-size:0.75rem;color:#71717a;">
+                {% block footer %}
+                  If you did not expect this email, you can safely ignore it.
+                {% endblock %}
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

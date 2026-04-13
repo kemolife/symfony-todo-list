@@ -1,0 +1,29 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Set up two-factor authentication{% endblock %}
+
+{% block body %}
+  <h2 style="margin:0 0 16px;font-size:1.25rem;font-weight:700;">Set up two-factor authentication</h2>
+
+  <p style="margin:0 0 12px;font-size:0.9375rem;line-height:1.6;color:#3f3f46;">
+    An administrator has granted you access to the admin panel.
+  </p>
+
+  <p style="margin:0 0 24px;font-size:0.9375rem;line-height:1.6;color:#3f3f46;">
+    Before you can sign in, you must set up two-factor authentication using an authenticator app
+    (e.g. Google Authenticator or Authy).
+  </p>
+
+  <p style="margin:0 0 24px;">
+    <a href="{{ url }}"
+       style="display:inline-block;background:#2563eb;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:0.9375rem;">
+      Set up 2FA
+    </a>
+  </p>
+
+  <p style="margin:0;font-size:0.8125rem;color:#71717a;">
+    This link expires in 24 hours.
+    <br>
+    Or copy this URL: <a href="{{ url }}" style="color:#2563eb;word-break:break-all;">{{ url }}</a>
+  </p>
+{% endblock %}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\DTO\Request\TodoRequest;
+use App\DTO\Response\AdminTodoResponse;
 use App\DTO\Response\PaginatedTodoResponse;
 use App\DTO\Response\TodoResponse;
 use App\Entity\ToDoList;
@@ -21,12 +22,12 @@ final class TodoService
     ) {
     }
 
-    public function findAll(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10): PaginatedTodoResponse
+    public function findAll(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10, ?User $owner = null): PaginatedTodoResponse
     {
-        $total = $this->repository->countFiltered($status, $tag, $search);
+        $total = $this->repository->countFiltered($status, $tag, $search, $owner);
         $items = array_map(
             TodoResponse::fromEntity(...),
-            $this->repository->findFiltered($status, $tag, $search, $page, $limit),
+            $this->repository->findFiltered($status, $tag, $search, $page, $limit, $owner),
         );
 
         return new PaginatedTodoResponse(
@@ -85,10 +86,27 @@ final class TodoService
         $this->em->flush();
     }
 
-    /** @return string[] */
-    public function findAllTags(): array
+    public function findAllForAdmin(?int $userId, ?string $status, int $page, int $limit): PaginatedTodoResponse
     {
-        return $this->repository->findAllTags();
+        $total = $this->repository->countAllAdmin($userId, $status);
+        $items = array_map(
+            AdminTodoResponse::fromEntity(...),
+            $this->repository->findAllAdmin($userId, $status, $page, $limit),
+        );
+
+        return new PaginatedTodoResponse(
+            items: $items,
+            total: $total,
+            page: $page,
+            limit: $limit,
+            pages: $total > 0 ? (int) ceil($total / $limit) : 1,
+        );
+    }
+
+    /** @return string[] */
+    public function findAllTags(?User $owner = null): array
+    {
+        return $this->repository->findAllTags($owner);
     }
 
     public function getEntity(int $id): ToDoList

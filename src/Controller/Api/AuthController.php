@@ -4,6 +4,9 @@ namespace App\Controller\Api;
 
 use App\DTO\Request\RegisterRequest;
 use App\DTO\Request\TwoFactorCheckRequest;
+use App\DTO\Request\TwoFactorConfirmRequest;
+use App\Entity\User;
+use App\Enum\UserRole;
 use App\Repository\UserRepository;
 use App\Service\UserService;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -14,8 +17,11 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/auth', name: 'api_auth')]
 final class AuthController extends AbstractController
@@ -57,6 +63,47 @@ final class AuthController extends AbstractController
         $this->cache->deleteItem($cacheKey);
 
         return $this->json(['token' => $this->jwtManager->create($user)]);
+    }
+
+    #[Route('/2fa/setup', name: 'api_auth_2fa_setup', methods: ['GET'])]
+    #[IsGranted(UserRole::Admin->value)]
+    public function setup2fa(): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($user->isTwoFactorConfirmed()) {
+            throw new ConflictHttpException('2FA is already confirmed');
+        }
+
+        if (null === $user->getTopSecret()) {
+            throw new BadRequestHttpException('No 2FA secret found for this user');
+        }
+
+        return $this->json([
+            'totp_uri' => $this->totpAuthenticator->getQRContent($user),
+            'totp_secret' => $user->getTopSecret(),
+        ]);
+    }
+
+    #[Route('/2fa/confirm', name: 'api_auth_2fa_confirm', methods: ['POST'])]
+    #[IsGranted(UserRole::Admin->value)]
+    public function confirm2fa(#[MapRequestPayload] TwoFactorConfirmRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($user->isTwoFactorConfirmed()) {
+            throw new ConflictHttpException('2FA is already confirmed');
+        }
+
+        if (!$this->totpAuthenticator->checkCode($user, $request->code)) {
+            throw new UnauthorizedHttpException('Bearer', 'Invalid 2FA code');
+        }
+
+        $this->userService->confirmTwoFactor($user);
+
+        return $this->json(['message' => '2FA confirmed successfully']);
     }
 
     /**

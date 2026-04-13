@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/axios'
 import { useAuthStore } from '../store/authStore'
 
@@ -31,6 +31,11 @@ export interface AdminRegisterResponse {
   totp_uri: string
 }
 
+interface TwoFactorSetupData {
+  totp_uri: string
+  totp_secret: string
+}
+
 export function useRegister() {
   const setToken = useAuthStore((s) => s.setToken)
   return useMutation({
@@ -43,8 +48,8 @@ export function useRegister() {
 }
 
 export function useLogin() {
-  const setToken = useAuthStore((s) => s.setToken)
   const setPreAuthToken = useAuthStore((s) => s.setPreAuthToken)
+  const setTokenAndCheckSetup = useAuthStore((s) => s.setTokenAndCheckSetup)
   return useMutation({
     mutationFn: async (credentials: AuthCredentials) => {
       const { data } = await api.post<LoginResponse>('/api/auth/login', credentials)
@@ -54,7 +59,7 @@ export function useLogin() {
       if (data.two_factor_required && data.pre_auth_token) {
         setPreAuthToken(data.pre_auth_token)
       } else if (data.token) {
-        setToken(data.token)
+        setTokenAndCheckSetup(data.token)
       }
     },
   })
@@ -76,6 +81,57 @@ export function useAdminRegister() {
     mutationFn: async (credentials: AdminRegisterCredentials) => {
       const { data } = await api.post<AdminRegisterResponse>('/api/admin/register', credentials)
       return data
+    },
+  })
+}
+
+export function useSetup2fa() {
+  return useQuery({
+    queryKey: ['2fa-setup'],
+    queryFn: async () => {
+      const { data } = await api.get<TwoFactorSetupData>('/api/auth/2fa/setup')
+      return data
+    },
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
+export function useConfirm2fa() {
+  const clearTwoFactorSetupPending = useAuthStore((s) => s.clearTwoFactorSetupPending)
+  return useMutation({
+    mutationFn: async (payload: { code: string }) => {
+      await api.post('/api/auth/2fa/confirm', payload)
+    },
+    onSuccess: () => clearTwoFactorSetupPending(),
+  })
+}
+
+export function useGetEnrollment(token: string) {
+  return useQuery({
+    queryKey: ['enrollment', token],
+    queryFn: async () => {
+      const { data } = await api.get<{ totp_uri: string; totp_secret: string }>(
+        `/api/auth/2fa/enroll/${token}`,
+      )
+      return data
+    },
+    enabled: token.length > 0,
+    retry: false,
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
+export function useConfirmEnrollment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ token, code }: { token: string; code: string }) => {
+      await api.post(`/api/auth/2fa/enroll/${token}`, { code })
+    },
+    onSuccess: (_, { token }) => {
+      qc.removeQueries({ queryKey: ['enrollment', token] })
     },
   })
 }

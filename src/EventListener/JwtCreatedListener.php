@@ -10,8 +10,12 @@ final class JwtCreatedListener
 {
     public function __invoke(JWTCreatedEvent $event): void
     {
+        $user = $event->getUser();
         $payload = $event->getData();
-        $payload['roles'] = $event->getUser()->getRoles();
+
+        $payload['roles'] = $user->getRoles();
+        $payload['twoFactorConfirmed'] = $user instanceof \App\Entity\User && $user->isTwoFactorConfirmed();
+
         $event->setData($payload);
     }
 }

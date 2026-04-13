@@ -6,6 +6,7 @@ namespace App\Security;
 
 use App\Entity\ToDoList;
 use App\Entity\User;
+use App\Enum\UserRole;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
@@ -31,7 +32,7 @@ final class TodoVoter extends Voter
             return false;
         }
 
-        if (in_array('ROLE_ADMIN', $token->getRoleNames(), true)) {
+        if (in_array(UserRole::Admin->value, $token->getRoleNames(), true)) {
             return true;
         }
 

@@ -9,6 +9,9 @@ import { TwoFactorPage } from './features/auth/TwoFactorPage'
 import { AdminLayout } from './features/admin/AdminLayout'
 import { DashboardOverview } from './features/admin/DashboardOverview'
 import { UsersPage } from './features/admin/UsersPage'
+import { TodosPage } from './features/admin/TodosPage'
+import { TotpSetupPage } from './features/auth/TotpSetupPage'
+import { EnrollPage } from './features/auth/EnrollPage'
 
 export default function App() {
   return (
@@ -17,6 +20,7 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/admin/register" element={<AdminRegisterPage />} />
       <Route path="/auth/2fa" element={<TwoFactorPage />} />
+      <Route path="/2fa/enroll" element={<EnrollPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route
@@ -30,9 +34,11 @@ export default function App() {
       </Route>
 
       <Route element={<AdminRoute />}>
+        <Route path="/dashboard/2fa/setup" element={<TotpSetupPage />} />
         <Route element={<AdminLayout />}>
           <Route path="/dashboard" element={<DashboardOverview />} />
           <Route path="/dashboard/users" element={<UsersPage />} />
+          <Route path="/dashboard/todos" element={<TodosPage />} />
         </Route>
       </Route>
     </Routes>

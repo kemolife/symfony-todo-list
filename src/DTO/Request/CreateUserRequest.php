@@ -15,4 +15,7 @@ final class CreateUserRequest
 
     #[StrongPassword]
     public string $password = '';
+
+    #[Assert\Choice(choices: ['admin', 'user'], message: 'Role must be admin or user')]
+    public string $role = 'user';
 }

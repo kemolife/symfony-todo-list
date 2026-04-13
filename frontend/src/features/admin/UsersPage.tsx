@@ -1,15 +1,24 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Pencil, Trash2, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, type UserData } from '@/api/useUsers'
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/api/useUsers'
+import { useAuthStore } from '@/store/authStore'
+import type { User } from '@/types/user'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -29,16 +38,16 @@ const createSchema = z.object({
     .string()
     .min(8, 'At least 8 characters')
     .regex(STRONG_PASSWORD_REGEX, STRONG_PASSWORD_MESSAGE),
+  role: z.enum(['admin', 'user']),
 })
 
 const editSchema = z.object({
   email: z.email(),
-  password: z
-    .string()
-    .refine(
-      (v) => v === '' || STRONG_PASSWORD_REGEX.test(v),
-      STRONG_PASSWORD_MESSAGE,
-    ),
+  password: z.string().refine(
+    (v) => v === '' || STRONG_PASSWORD_REGEX.test(v),
+    STRONG_PASSWORD_MESSAGE,
+  ),
+  role: z.enum(['admin', 'user']),
 })
 
 type CreateFormData = z.infer<typeof createSchema>
@@ -53,25 +62,28 @@ function RoleBadge({ role }: { role: string }) {
   )
 }
 
-function CreateUserDialog({
-  open,
-  onClose,
-}: {
-  open: boolean
-  onClose: () => void
-}) {
+function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const createUser = useCreateUser()
+
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
-  } = useForm<CreateFormData>({ resolver: zodResolver(createSchema) })
+  } = useForm<CreateFormData>({
+    resolver: zodResolver(createSchema),
+    defaultValues: { role: 'user' },
+  })
 
   const onSubmit = async (data: CreateFormData) => {
     try {
       await createUser.mutateAsync(data)
-      toast.success('User created')
+      if (data.role === 'admin') {
+        toast.success(`User created — enrollment email sent to ${data.email}`)
+      } else {
+        toast.success('User created')
+      }
       reset()
       onClose()
     } catch {
@@ -103,6 +115,24 @@ function CreateUserDialog({
               <p className="text-xs text-destructive">{errors.password.message}</p>
             )}
           </div>
+          <div className="space-y-1.5">
+            <Label>Role</Label>
+            <Controller
+              name="role"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
@@ -117,39 +147,51 @@ function CreateUserDialog({
   )
 }
 
-function EditUserDialog({
-  user,
-  onClose,
-}: {
-  user: UserData | null
-  onClose: () => void
-}) {
+function EditUserDialog({ user, onClose }: { user: User | null; onClose: () => void }) {
   const updateUser = useUpdateUser()
+  const currentEmail = useAuthStore((s) => s.email)
+  const isSelf = user?.email === currentEmail
+
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<EditFormData>({
     resolver: zodResolver(editSchema),
-    values: user ? { email: user.email, password: '' } : undefined,
+    values: user
+      ? {
+          email: user.email,
+          password: '',
+          role: user.roles.includes('ROLE_ADMIN') ? 'admin' : 'user',
+        }
+      : undefined,
   })
-
-  const onSubmit = async (data: EditFormData) => {
-    if (!user) return
-    try {
-      await updateUser.mutateAsync({ id: user.id, email: data.email, password: data.password })
-      toast.success('User updated')
-      reset()
-      onClose()
-    } catch {
-      toast.error('Failed to update user')
-    }
-  }
 
   const handleClose = () => {
     reset()
     onClose()
+  }
+
+  const onSubmit = async (data: EditFormData) => {
+    if (!user) return
+    try {
+      const wasAdmin = user.roles.includes('ROLE_ADMIN')
+      const payload = isSelf
+        ? { id: user.id, email: data.email, password: data.password }
+        : { id: user.id, ...data }
+      await updateUser.mutateAsync(payload)
+      const becomesAdmin = !isSelf && data.role === 'admin'
+      if (!wasAdmin && becomesAdmin) {
+        toast.success(`User updated — enrollment email sent to ${data.email}`)
+      } else {
+        toast.success('User updated')
+      }
+      handleClose()
+    } catch {
+      toast.error('Failed to update user')
+    }
   }
 
   return (
@@ -162,8 +204,11 @@ function EditUserDialog({
           <div className="space-y-1.5">
             <Label htmlFor="edit-email">Email</Label>
             <Input id="edit-email" type="email" {...register('email')} />
-            {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+            {errors.email && (
+              <p className="text-xs text-destructive">{errors.email.message}</p>
+            )}
           </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="edit-password">New password</Label>
             <Input
@@ -176,6 +221,28 @@ function EditUserDialog({
               <p className="text-xs text-destructive">{errors.password.message}</p>
             )}
           </div>
+
+          {!isSelf && (
+            <div className="space-y-1.5">
+              <Label>Role</Label>
+              <Controller
+                name="role"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+          )}
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
@@ -190,13 +257,7 @@ function EditUserDialog({
   )
 }
 
-function DeleteUserDialog({
-  user,
-  onClose,
-}: {
-  user: UserData | null
-  onClose: () => void
-}) {
+function DeleteUserDialog({ user, onClose }: { user: User | null; onClose: () => void }) {
   const deleteUser = useDeleteUser()
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -240,8 +301,8 @@ function DeleteUserDialog({
 export function UsersPage() {
   const { data: users, isLoading, isError } = useUsers()
   const [showCreate, setShowCreate] = useState(false)
-  const [editUser, setEditUser] = useState<UserData | null>(null)
-  const [deleteUser, setDeleteUser] = useState<UserData | null>(null)
+  const [editUser, setEditUser] = useState<User | null>(null)
+  const [deleteUser, setDeleteUser] = useState<User | null>(null)
 
   return (
     <div className="space-y-4">
@@ -268,18 +329,10 @@ export function UsersPage() {
             {isLoading &&
               Array.from({ length: 4 }).map((_, i) => (
                 <tr key={i} className="border-b last:border-0">
-                  <td className="px-4 py-3">
-                    <Skeleton className="h-4 w-6" />
-                  </td>
-                  <td className="px-4 py-3">
-                    <Skeleton className="h-4 w-40" />
-                  </td>
-                  <td className="px-4 py-3">
-                    <Skeleton className="h-4 w-20" />
-                  </td>
-                  <td className="px-4 py-3">
-                    <Skeleton className="h-4 w-8" />
-                  </td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-6" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-8" /></td>
                   <td className="px-4 py-3" />
                 </tr>
               ))}

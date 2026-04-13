@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { useNavigate, Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useLogin } from '@/api/useAuth'
+import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +20,7 @@ type FormData = z.infer<typeof schema>
 export function LoginPage() {
   const navigate = useNavigate()
   const login = useLogin()
+  const isAdmin = useAuthStore((s) => s.isAdmin)
 
   const {
     register,
@@ -32,7 +34,7 @@ export function LoginPage() {
       if (result.two_factor_required) {
         navigate('/auth/2fa')
       } else {
-        navigate('/')
+        navigate(isAdmin() ? '/dashboard' : '/')
       }
     } catch (e) {
       toast.error((e as Error).message)

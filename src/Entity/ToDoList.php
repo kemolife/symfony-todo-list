@@ -30,7 +30,7 @@ class ToDoList
     private TodoStatus $status = TodoStatus::Pending;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: true)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?User $owner = null;
 
     #[ORM\Column]

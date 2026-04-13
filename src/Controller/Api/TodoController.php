@@ -26,12 +26,17 @@ final class TodoController extends AbstractController
     #[Route('/tags', name: '_tags', methods: ['GET'])]
     public function tags(): JsonResponse
     {
-        return $this->json($this->todoService->findAllTags());
+        /** @var User $user */
+        $user = $this->getUser();
+
+        return $this->json($this->todoService->findAllTags($user));
     }
 
     #[Route('', name: '_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
+        /** @var User $user */
+        $user = $this->getUser();
         $page = max(1, $request->query->getInt('page', 1));
         $limit = min(100, max(1, $request->query->getInt('limit', 10)));
 
@@ -41,6 +46,7 @@ final class TodoController extends AbstractController
             search: $request->query->get('search'),
             page: $page,
             limit: $limit,
+            owner: $user,
         ));
     }
 

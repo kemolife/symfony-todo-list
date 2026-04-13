@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use App\Enum\UserRole;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Scheb\TwoFactorBundle\Model\Totp\TotpConfiguration;
@@ -38,6 +39,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     #[ORM\Column(nullable: true)]
     private ?string $topSecret = null;
 
+    #[ORM\Column(options: ['default' => false])]
+    private bool $twoFactorConfirmed = false;
+
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $enrollmentToken = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $enrollmentTokenExpiresAt = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -71,7 +81,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     public function getRoles(): array
     {
         $roles = $this->roles;
-        $roles[] = 'ROLE_USER';
+        $roles[] = UserRole::User->value;
 
         return array_unique($roles);
     }
@@ -130,9 +140,50 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         // @deprecated, to be removed when upgrading to Symfony 8
     }
 
+    public function hasRole(UserRole $role): bool
+    {
+        return in_array($role->value, $this->getRoles(), true);
+    }
+
+    public function isTwoFactorConfirmed(): bool
+    {
+        return $this->twoFactorConfirmed;
+    }
+
+    public function setTwoFactorConfirmed(bool $twoFactorConfirmed): static
+    {
+        $this->twoFactorConfirmed = $twoFactorConfirmed;
+
+        return $this;
+    }
+
+    public function getEnrollmentToken(): ?string
+    {
+        return $this->enrollmentToken;
+    }
+
+    public function setEnrollmentToken(?string $enrollmentToken): static
+    {
+        $this->enrollmentToken = $enrollmentToken;
+
+        return $this;
+    }
+
+    public function getEnrollmentTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->enrollmentTokenExpiresAt;
+    }
+
+    public function setEnrollmentTokenExpiresAt(?\DateTimeImmutable $enrollmentTokenExpiresAt): static
+    {
+        $this->enrollmentTokenExpiresAt = $enrollmentTokenExpiresAt;
+
+        return $this;
+    }
+
     public function isTotpAuthenticationEnabled(): bool
     {
-        return null !== $this->topSecret;
+        return null !== $this->topSecret && $this->twoFactorConfirmed;
     }
 
     public function getTotpAuthenticationUsername(): string
