@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/axios'
-import type { CreateTodoInput, PaginatedResponse, Todo, TodoFilters, UpdateTodoInput } from '../types/todo'
+import type { CreateTodoInput, CreateTodoItemInput, PaginatedResponse, Todo, TodoFilters, TodoItem, UpdateTodoInput, UpdateTodoItemInput } from '../types/todo'
 
 const TODOS_KEY = 'todos'
 
@@ -74,6 +74,44 @@ export function useDeleteTodo() {
   return useMutation({
     mutationFn: async (id: number) => {
       await api.delete(`/api/todos/${id}`)
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
+    },
+  })
+}
+
+export function useCreateTodoItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ todoId, ...input }: { todoId: number } & CreateTodoItemInput) => {
+      const { data } = await api.post<TodoItem>(`/api/todos/${todoId}/items`, input)
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
+    },
+  })
+}
+
+export function useToggleTodoItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ todoId, itemId, ...input }: { todoId: number; itemId: number } & UpdateTodoItemInput) => {
+      const { data } = await api.patch<TodoItem>(`/api/todos/${todoId}/items/${itemId}`, input)
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
+    },
+  })
+}
+
+export function useDeleteTodoItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ todoId, itemId }: { todoId: number; itemId: number }) => {
+      await api.delete(`/api/todos/${todoId}/items/${itemId}`)
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: [TODOS_KEY] })

@@ -7,6 +7,7 @@ import { useDeleteTodo, useUpdateTodo } from '@/api/useTodos'
 import { useModalStore } from '@/store/modalStore'
 import type { Todo, TodoStatus } from '@/types/todo'
 import { toast } from 'sonner'
+import { TodoItemList } from './TodoItemList'
 
 const statusVariant: Record<TodoStatus, 'default' | 'secondary' | 'outline'> = {
   pending: 'outline',
@@ -64,6 +65,7 @@ export function TodoCard({ todo }: TodoCardProps) {
             <Badge variant={statusVariant[todo.status]}>{statusLabel[todo.status]}</Badge>
             {todo.tag && <Badge variant="outline">{todo.tag}</Badge>}
           </div>
+          <TodoItemList todoId={todo.id} items={todo.items} />
         </div>
         <div className="flex shrink-0 gap-1">
           <Button size="icon" variant="ghost" onClick={() => openEdit(todo.id)} className="h-8 w-8">

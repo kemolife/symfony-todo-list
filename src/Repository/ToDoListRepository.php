@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\ToDoList;
+use App\Entity\TodoList;
 use App\Entity\User;
 use App\Enum\TodoStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -12,21 +12,23 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<ToDoList>
+ * @extends ServiceEntityRepository<TodoList>
  */
-final class ToDoListRepository extends ServiceEntityRepository
+final class TodoListRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, ToDoList::class);
+        parent::__construct($registry, TodoList::class);
     }
 
     /**
-     * @return ToDoList[]
+     * @return TodoList[]
      */
     public function findFiltered(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10, ?User $owner = null): array
     {
         return $this->buildFilteredQuery($status, $tag, $search, $owner)
+            ->leftJoin('t.todoItems', 'ti')
+            ->addSelect('ti')
             ->orderBy('t.createdAt', 'DESC')
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit)
@@ -61,11 +63,13 @@ final class ToDoListRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return ToDoList[]
+     * @return TodoList[]
      */
     public function findAllAdmin(?int $userId, ?string $status, int $page, int $limit): array
     {
         return $this->buildAdminQuery($userId, $status)
+            ->leftJoin('t.todoItems', 'ti')
+            ->addSelect('ti')
             ->orderBy('t.createdAt', 'DESC')
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit)

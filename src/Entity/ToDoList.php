@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\TodoStatus;
-use App\Repository\ToDoListRepository;
+use App\Repository\TodoListRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: ToDoListRepository::class)]
+#[ORM\Entity(repositoryClass: TodoListRepository::class)]
+#[ORM\Table(name: 'todo_list')]
 #[ORM\HasLifecycleCallbacks]
-class ToDoList
+class TodoList
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -39,10 +42,16 @@ class ToDoList
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
 
+    /** @var Collection<int, TodoItem> */
+    #[ORM\OneToMany(targetEntity: TodoItem::class, mappedBy: 'todoList', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    private Collection $todoItems;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->todoItems = new ArrayCollection();
     }
 
     #[ORM\PreUpdate]
@@ -122,6 +131,29 @@ class ToDoList
     public function setOwner(?User $owner): static
     {
         $this->owner = $owner;
+
+        return $this;
+    }
+
+    /** @return Collection<int, TodoItem> */
+    public function getTodoItems(): Collection
+    {
+        return $this->todoItems;
+    }
+
+    public function addTodoItem(TodoItem $item): static
+    {
+        if (!$this->todoItems->contains($item)) {
+            $this->todoItems->add($item);
+            $item->setTodoList($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTodoItem(TodoItem $item): static
+    {
+        $this->todoItems->removeElement($item);
 
         return $this;
     }

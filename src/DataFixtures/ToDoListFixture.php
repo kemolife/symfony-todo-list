@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\DataFixtures;
 
-use App\Entity\ToDoList;
+use App\Entity\TodoList;
 use App\Enum\TodoStatus;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
 use Faker\Generator;
 
-class ToDoListFixture extends Fixture
+class TodoListFixture extends Fixture
 {
     protected Generator $faker;
 
@@ -21,7 +21,7 @@ class ToDoListFixture extends Fixture
         $statuses = TodoStatus::cases();
 
         for ($i = 0; $i < 20; ++$i) {
-            $list = (new ToDoList())
+            $list = (new TodoList())
                 ->setName($this->faker->sentence())
                 ->setDescription($this->faker->paragraph())
                 ->setTag($this->faker->randomElement(['work', 'personal', 'shopping', 'health']))

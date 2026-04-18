@@ -20,6 +20,7 @@
 ###< phpunit/phpunit ###
 
 .idea
+*.local.md
 
 ###> lexik/jwt-authentication-bundle ###
 /config/jwt/*.pem

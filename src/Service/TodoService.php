@@ -8,16 +8,16 @@ use App\DTO\Request\TodoRequest;
 use App\DTO\Response\AdminTodoResponse;
 use App\DTO\Response\PaginatedTodoResponse;
 use App\DTO\Response\TodoResponse;
-use App\Entity\ToDoList;
+use App\Entity\TodoList;
 use App\Entity\User;
-use App\Repository\ToDoListRepository;
+use App\Repository\TodoListRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class TodoService
 {
     public function __construct(
-        private readonly ToDoListRepository $repository,
+        private readonly TodoListRepository $repository,
         private readonly EntityManagerInterface $em,
     ) {
     }
@@ -46,7 +46,7 @@ final class TodoService
 
     public function create(TodoRequest $dto, ?User $owner = null): TodoResponse
     {
-        $todo = new ToDoList()
+        $todo = new TodoList()
             ->setName($dto->name)
             ->setDescription($dto->description)
             ->setTag($dto->tag)
@@ -109,12 +109,12 @@ final class TodoService
         return $this->repository->findAllTags($owner);
     }
 
-    public function getEntity(int $id): ToDoList
+    public function getEntity(int $id): TodoList
     {
         return $this->findOrFail($id);
     }
 
-    private function findOrFail(int $id): ToDoList
+    private function findOrFail(int $id): TodoList
     {
         return $this->repository->find($id)
             ?? throw new NotFoundHttpException("Todo #$id not found");

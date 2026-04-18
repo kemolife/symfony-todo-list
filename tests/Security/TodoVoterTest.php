@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Security;
 
-use App\Entity\ToDoList;
+use App\Entity\TodoList;
 use App\Entity\User;
 use App\Security\TodoVoter;
 use PHPUnit\Framework\TestCase;
@@ -31,9 +31,9 @@ final class TodoVoterTest extends TestCase
         return $user;
     }
 
-    private function makeTodo(?User $owner = null): ToDoList
+    private function makeTodo(?User $owner = null): TodoList
     {
-        $todo = new ToDoList();
+        $todo = new TodoList();
         if ($owner) {
             $todo->setOwner($owner);
         }

@@ -28,11 +28,11 @@ security:
             provider: app_user_provider
 
     # Note: Only the *first* matching rule is applied
+    # access_control only answers "is there a valid JWT?" — role checks live on controllers via #[IsGranted]
     access_control:
         - { path: ^/api/auth, roles: PUBLIC_ACCESS }
         - { path: ^/api/admin/register, roles: PUBLIC_ACCESS }
-        - { path: ^/api/, roles: ROLE_USER }
-        - { path: ^/api/admin, roles: ROLE_ADMIN }
+        - { path: ^/api/, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Command;
 
-use App\Entity\ToDoList;
+use App\Entity\TodoList;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -31,7 +31,7 @@ final class CreateTodoCommandTest extends KernelTestCase
         self::assertSame(0, $this->tester->getStatusCode());
         self::assertStringContainsString('Created todo', $this->tester->getDisplay());
 
-        $todo = $this->em->getRepository(ToDoList::class)->findOneBy(['name' => 'Buy milk']);
+        $todo = $this->em->getRepository(TodoList::class)->findOneBy(['name' => 'Buy milk']);
         self::assertNotNull($todo);
         self::assertSame('pending', $todo->getStatus()->value);
     }
@@ -47,7 +47,7 @@ final class CreateTodoCommandTest extends KernelTestCase
 
         self::assertSame(0, $this->tester->getStatusCode());
 
-        $todo = $this->em->getRepository(ToDoList::class)->findOneBy(['name' => 'Write tests']);
+        $todo = $this->em->getRepository(TodoList::class)->findOneBy(['name' => 'Write tests']);
         self::assertNotNull($todo);
         self::assertSame('in_progress', $todo->getStatus()->value);
         self::assertSame('dev', $todo->getTag());

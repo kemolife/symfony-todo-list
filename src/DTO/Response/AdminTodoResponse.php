@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\DTO\Response;
 
-use App\Entity\ToDoList;
+use App\Entity\TodoList;
 
 final readonly class AdminTodoResponse
 {
@@ -21,7 +21,7 @@ final readonly class AdminTodoResponse
     ) {
     }
 
-    public static function fromEntity(ToDoList $todo): self
+    public static function fromEntity(TodoList $todo): self
     {
         return new self(
             id: $todo->getId(),

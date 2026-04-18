@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Security;
 
-use App\Entity\ToDoList;
+use App\Entity\TodoList;
 use App\Entity\User;
 use App\Enum\UserRole;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 /**
- * @extends Voter<string, ToDoList>
+ * @extends Voter<string, TodoList>
  */
 final class TodoVoter extends Voter
 {
@@ -21,7 +21,7 @@ final class TodoVoter extends Voter
     protected function supports(string $attribute, mixed $subject): bool
     {
         return in_array($attribute, [self::EDIT, self::DELETE], true)
-            && $subject instanceof ToDoList;
+            && $subject instanceof TodoList;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool

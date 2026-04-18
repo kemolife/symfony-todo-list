@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api;
 
-use App\Entity\ToDoList;
+use App\Entity\TodoList;
 use App\Entity\User;
 use App\Enum\TodoStatus;
 use Doctrine\ORM\EntityManagerInterface;
@@ -41,9 +41,9 @@ final class TodoControllerTest extends WebTestCase
         $this->client->loginUser($user);
     }
 
-    private function createTodo(string $name = 'Test todo', ?string $tag = null, TodoStatus $status = TodoStatus::Pending, ?User $owner = null): ToDoList
+    private function createTodo(string $name = 'Test todo', ?string $tag = null, TodoStatus $status = TodoStatus::Pending, ?User $owner = null): TodoList
     {
-        $todo = (new ToDoList())
+        $todo = (new TodoList())
             ->setName($name)
             ->setTag($tag)
             ->setStatus($status)
