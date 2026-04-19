@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Symfony 7 REST API backend + React 19 frontend (in `frontend/`) for a Todo application.
+Symfony 7 REST API backend + React 19 frontend (in `frontend/`) for a Todo application with JWT auth, TOTP 2FA, and role-based access control.
 
 ## Commands
 
@@ -15,16 +15,16 @@ composer install
 ./bin/console doctrine:migrations:migrate
 ./bin/console doctrine:fixtures:load --no-interaction
 
-# Run all tests
-./vendor/bin/phpunit
+./vendor/bin/phpunit                                          # All tests
+./vendor/bin/phpunit tests/Controller/Api/TodoControllerTest.php  # Single file
 
-# Run specific test file
-./vendor/bin/phpunit tests/Controller/Api/TodoControllerTest.php
-
-# Start dev server
 symfony server:start
-# or
-php -S localhost:8000 -t public/
+```
+
+### Messenger worker
+
+```bash
+./bin/console messenger:consume async -vv
 ```
 
 ### Frontend (`cd frontend` first)
@@ -35,49 +35,102 @@ npm run dev        # Vite dev server on port 5173
 npm run build      # TypeScript check + Vite build
 npm run lint
 npm run test       # Vitest
-npm run test -- TodoList.test.tsx  # Single test file
+npm run test -- TodoList.test.tsx
 ```
 
-### Database
+### Database / Docker
 
 ```bash
-docker-compose up -d   # Start PostgreSQL 16
+docker compose up -d                                  # PostgreSQL 16 + RabbitMQ
 ./bin/console doctrine:migrations:migrate
-APP_ENV=test ./bin/console doctrine:migrations:migrate  # Test DB
+APP_ENV=test ./bin/console doctrine:migrations:migrate
 ```
 
-## Architecture
+## Environment Files
 
-### Backend (`src/`)
+- `.env` — committed defaults only; never put secrets or local DSNs here
+- `.env.local` — local dev overrides (not committed); set `MESSENGER_TRANSPORT_DSN`, `DATABASE_URL`, etc. here
+- `.env.test` — test environment overrides
 
-```
-Controller/Api/TodoController.php   # HTTP layer only
-Service/TodoService.php             # Business logic
-Repository/ToDoListRepository.php   # Doctrine queries (pagination, filtering)
-Entity/ToDoList.php                 # Doctrine ORM entity with lifecycle callbacks
-DTO/Request/TodoRequest.php         # Input validation via Symfony Validator
-DTO/Response/TodoResponse.php       # Response shaping
-Enum/TodoStatus.php                 # pending | in_progress | done
-EventListener/ExceptionListener.php # Centralized error → JSON response
-```
+## Backend Architecture
 
-The controller delegates to service, service delegates to repository. DTOs handle validation and response shaping — never expose entities directly.
+### Request lifecycle
 
-### Frontend (`frontend/src/`)
+`Controller` → `Service` → `Repository`. Controllers use `#[MapRequestPayload]` to deserialize + validate JSON bodies into request DTOs automatically; invalid bodies return **422** before the controller method runs. Controllers never call `em->persist/flush` — all persistence is in the service layer.
 
-- **API layer**: `lib/axios.ts` — Axios instance using `VITE_API_URL` (default: `http://localhost:8000`)
-- **Data fetching**: TanStack Query for server state (queries + mutations)
-- **UI**: shadcn/ui components + Tailwind CSS v4
-- **Forms**: React Hook Form + Zod validation
-- **Tests**: Vitest + React Testing Library + MSW for API mocking
+### Authorization
 
-### API
+- Class-level `#[IsGranted(UserRole::User->value)]` guards all endpoints
+- Resource-level checks use `TodoVoter` via `denyAccessUnlessGranted(TodoVoter::EDIT, $todo)`
+- `TodoVoter` compares owner IDs when both entities are persisted; falls back to object identity for transients
+- Admin registration (`/api/admin/register`) requires `ADMIN_SECRET` env var verification
+
+### Security / 2FA
+
+- JWT via `lexik/jwt-authentication-bundle`; token payload includes `roles`, `email`, `twoFactorConfirmed`
+- `TwoFactorAuthSuccessHandler` intercepts login: if admin has 2FA pending, returns `{ two_factor_required: true, pre_auth_token }` instead of a JWT — the pre-auth token is cached with a 300 s TTL
+- `User` implements `TwoFactorInterface` for TOTP; `__serialize()` uses CRC32C hash for session safety
+
+### DTOs
+
+- **Request DTOs** — public properties + Symfony Validator constraints; `validationGroups: ['create']` enables context-specific rules
+- **Response DTOs** — `readonly`, created via static `fromEntity()` factories; never mutated
+- Two response shapes: `TodoResponse` (user view with nested `TodoItemResponse`) and `AdminTodoResponse` (adds owner email/ID)
+
+### Repository patterns
+
+- `buildFilteredQuery()` / `buildAdminQuery()` are shared between count and find methods to avoid duplication
+- `leftJoin` with `addSelect` for eager loading prevents N+1 queries on `TodoItems`
+- `TodoStatus::tryFrom($status)` guards enum values before they reach the query builder
+
+### Entity conventions
+
+- `ToDoList` uses `#[ORM\PreUpdate]` lifecycle callback to auto-update `updatedAt`; creation timestamp set in constructor as `\DateTimeImmutable`
+- `TodoItem` is ordered `position ASC` via `#[ORM\OrderBy]`; auto-deleted via `cascade + orphanRemoval` when parent is removed
+- Doctrine naming strategy: `underscore` — e.g. `todoList` → `todo_list`
+
+### Error handling
+
+`ExceptionListener` catches all exceptions and returns `{ "error": "message" }` JSON. Non-HTTP exceptions map to 500.
+
+### Messenger
+
+Transports: `async` (RabbitMQ via `MESSENGER_TRANSPORT_DSN`), `failed` (Doctrine queue), `sync`. Test env uses `in-memory://`. No `Message`/`MessageHandler` classes exist yet — routing section in `messenger.yaml` is intentionally empty.
+
+### Testing
+
+- `WebTestCase` integration tests; DAMA bundle wraps each test in a rolled-back transaction — write tests assuming a clean state
+- Tests create fixtures inline via helper methods (not Foundry)
+- `loginUser()` bypasses password verification; dummy hash `'$2y$04$' . str_repeat('a', 53)` is used in test users
+- `when@test` in `security.yaml` reduces bcrypt cost for speed
+- **Route order matters**: `/api/todos/tags` must be declared before `/api/todos/{id}` in the controller
+
+## Frontend Architecture
+
+### State management (Zustand)
+
+- `useAuthStore` — persisted to `localStorage`; decodes JWT to extract `roles`, `twoFactorConfirmed`, `email`; `isAdmin()` checks for `ROLE_ADMIN`; 2FA setup flag set by `setTokenAndCheckSetup()`
+- `useTodoFilterStore` — pagination + filters; resets page to 1 whenever non-page filters change
+- `useModalStore` — create/edit modals are mutually exclusive
+
+### API layer
+
+`lib/axios.ts` injects `Authorization: Bearer` from `useAuthStore` on every request. 401/403 clears the token and redirects to `/login`. Error messages extracted from `response.data.error`.
+
+### Routing
+
+- Public: `/login`, `/register`, `/admin/register`, `/auth/2fa`, `/2fa/enroll`
+- `<ProtectedRoute>` — requires `isAuthenticated`
+- `<AdminRoute>` — requires `isAdmin()`
+- Dashboard at `/dashboard/*` with nested admin layout
+
+### API endpoints
 
 Base path: `/api/todos`
 
 | Method | Path | Notes |
 |--------|------|-------|
-| GET | `/api/todos` | Paginated list; query params: `page`, `limit`, `status`, `tag`, `search` |
+| GET | `/api/todos` | Paginated; params: `page`, `limit`, `status`, `tag`, `search` |
 | GET | `/api/todos/tags` | Unique tag list |
 | GET | `/api/todos/{id}` | Single item |
 | POST | `/api/todos` | Create |
@@ -86,18 +139,11 @@ Base path: `/api/todos`
 
 Paginated response shape: `{ items, total, page, limit, pages }`.
 
-### Testing
+### Frontend testing
 
-**Backend**: Integration tests via `WebTestCase`. DAMA Doctrine Test Bundle wraps each test in a rolled-back transaction — no manual DB cleanup needed. Tests hit a real test database configured in `.env.test`.
-
-**Frontend**: MSW handlers in `src/test/mocks/handlers.ts` intercept API calls. No real network requests in tests.
-
-### CORS
-
-Configured in `config/packages/nelmio_cors.yaml`. Allows all methods on `/api/*` from `localhost` / `127.0.0.1`. Override origin pattern via `CORS_ALLOW_ORIGIN` env var.
+MSW handlers in `src/test/mocks/handlers.ts` intercept all API calls — no real network requests in tests.
 
 ## Skills
 
-This project has two active skills:
 - `symfony-api` — use when working on backend (controllers, entities, DTOs, services, tests)
 - `react-app` — use when working on frontend (components, hooks, stores, tests)

@@ -11,12 +11,16 @@ use App\Entity\TodoList;
 use App\Repository\TodoItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use App\Event\TodoItemCompletedEvent;
+use App\Event\TodoItemUncompletedEvent;
 
 final class TodoItemService
 {
     public function __construct(
         private readonly TodoItemRepository $todoItemRepository,
         private readonly EntityManagerInterface $em,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -74,6 +78,11 @@ final class TodoItemService
 
         if (null !== $dto->isCompleted) {
             $item->setIsCompleted($dto->isCompleted);
+            if ($dto->isCompleted === true) {
+                $this->eventDispatcher->dispatch(new TodoItemCompletedEvent($item));
+            } else {
+                $this->eventDispatcher->dispatch(new TodoItemUncompletedEvent($item));
+            }
         }
 
         if (null !== $dto->position) {

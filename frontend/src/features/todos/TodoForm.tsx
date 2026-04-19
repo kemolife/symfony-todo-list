@@ -90,7 +90,11 @@ export function TodoForm({ todoId, onSuccess }: TodoFormProps) {
           <Label>Status</Label>
           <Select value={watch('status')} onValueChange={(v) => setValue('status', v as FormData['status'])}>
             <SelectTrigger>
-              <SelectValue placeholder="Select status" />
+              <SelectValue placeholder="Select status">
+                {watch('status') === 'pending' && 'Pending'}
+                {watch('status') === 'in_progress' && 'In Progress'}
+                {watch('status') === 'done' && 'Done'}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="pending">Pending</SelectItem>

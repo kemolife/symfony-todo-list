@@ -20,7 +20,7 @@ final class AdminControllerTest extends WebTestCase
     {
         $this->client = static::createClient();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
-        $this->adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
+        $this->adminSecret = $_ENV['ADMIN_SECRET'] ?: '9575806574';
     }
 
     private function postJson(string $uri, array $body): void

@@ -13,12 +13,15 @@ use App\Entity\User;
 use App\Repository\TodoListRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use App\Event\TodoListStatusChangedEvent;
 
 final class TodoService
 {
     public function __construct(
         private readonly TodoListRepository $repository,
         private readonly EntityManagerInterface $em,
+        private readonly EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -71,7 +74,13 @@ final class TodoService
             ->setTag($dto->tag);
 
         if (null !== $dto->status) {
+            $previousStatus = $todo->getStatus();
             $todo->setStatus($dto->status);
+            if ($previousStatus !== $dto->status) {
+                $this->eventDispatcher->dispatch(
+                    new TodoListStatusChangedEvent($todo, $previousStatus)
+                );
+            }
         }
 
         $this->em->flush();

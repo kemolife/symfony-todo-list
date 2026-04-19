@@ -115,7 +115,7 @@ final class AuthControllerTest extends WebTestCase
 
     public function testAdminLoginReturnsPreAuthToken(): void
     {
-        $adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
+        $adminSecret = $_ENV['ADMIN_SECRET'] ?: '9575806574';
 
         $this->postJson('/api/admin/register', [
             'email' => 'admin2fa@test.com',
@@ -137,7 +137,7 @@ final class AuthControllerTest extends WebTestCase
 
     public function test2faCheckReturnsTokenWithValidCode(): void
     {
-        $adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
+        $adminSecret = $_ENV['ADMIN_SECRET'] ?: '9575806574';
 
         $this->postJson('/api/admin/register', [
             'email' => 'admin2fa2@test.com',
@@ -172,7 +172,7 @@ final class AuthControllerTest extends WebTestCase
 
     public function test2faCheckFailsWithWrongCode(): void
     {
-        $adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
+        $adminSecret = $_ENV['ADMIN_SECRET'] ?: '9575806574';
 
         $this->postJson('/api/admin/register', [
             'email' => 'admin2fa3@test.com',
@@ -240,7 +240,7 @@ final class AuthControllerTest extends WebTestCase
 
     public function testSetupReturnsConflictWhenAlreadyConfirmed(): void
     {
-        $adminSecret = $_ENV['ADMIN_SECRET'] ?? '9575806574';
+        $adminSecret = $_ENV['ADMIN_SECRET'] ?: '9575806574';
         $this->postJson('/api/admin/register', [
             'email' => 'confirmed@test.com',
             'password' => 'Password1!',
