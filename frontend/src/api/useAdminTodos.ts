@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/axios'
 import type { PaginatedResponse, TodoStatus } from '../types/todo'
 
+export type AdminTodoFilterStatus = TodoStatus | 'deleted'
+
 export interface AdminTodo {
   id: number
   name: string
@@ -12,11 +14,12 @@ export interface AdminTodo {
   ownerEmail: string | null
   createdAt: string
   updatedAt: string
+  deletedAt: string | null
 }
 
 export interface AdminTodoFilters {
   userId?: number
-  status?: TodoStatus
+  status?: AdminTodoFilterStatus
   page?: number
   limit?: number
 }

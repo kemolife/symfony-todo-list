@@ -9,10 +9,12 @@ use App\Repository\TodoListRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 #[ORM\Entity(repositoryClass: TodoListRepository::class)]
 #[ORM\Table(name: 'todo_list')]
 #[ORM\HasLifecycleCallbacks]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: false)]
 class TodoList
 {
     #[ORM\Id]
@@ -41,6 +43,9 @@ class TodoList
 
     #[ORM\Column]
     private \DateTimeImmutable $updatedAt;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $deletedAt = null;
 
     /** @var Collection<int, TodoItem> */
     #[ORM\OneToMany(targetEntity: TodoItem::class, mappedBy: 'todoList', cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -121,6 +126,11 @@ class TodoList
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getDeletedAt(): ?\DateTimeImmutable
+    {
+        return $this->deletedAt;
     }
 
     public function getOwner(): ?User

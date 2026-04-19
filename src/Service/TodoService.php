@@ -10,11 +10,11 @@ use App\DTO\Response\PaginatedTodoResponse;
 use App\DTO\Response\TodoResponse;
 use App\Entity\TodoList;
 use App\Entity\User;
+use App\Event\TodoListStatusChangedEvent;
 use App\Repository\TodoListRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use App\Event\TodoListStatusChangedEvent;
 
 final class TodoService
 {
@@ -97,11 +97,23 @@ final class TodoService
 
     public function findAllForAdmin(?int $userId, ?string $status, int $page, int $limit): PaginatedTodoResponse
     {
-        $total = $this->repository->countAllAdmin($userId, $status);
-        $items = array_map(
-            AdminTodoResponse::fromEntity(...),
-            $this->repository->findAllAdmin($userId, $status, $page, $limit),
-        );
+        $includeDeleted = 'deleted' === $status;
+
+        if ($includeDeleted) {
+            $this->em->getFilters()->disable('softdeleteable');
+        }
+
+        try {
+            $total = $this->repository->countAllAdmin($userId, $status, $includeDeleted);
+            $items = array_map(
+                AdminTodoResponse::fromEntity(...),
+                $this->repository->findAllAdmin($userId, $status, $page, $limit, $includeDeleted),
+            );
+        } finally {
+            if ($includeDeleted) {
+                $this->em->getFilters()->enable('softdeleteable');
+            }
+        }
 
         return new PaginatedTodoResponse(
             items: $items,

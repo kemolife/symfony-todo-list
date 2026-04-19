@@ -2,14 +2,14 @@
 
 namespace App\EventSubscriber;
 
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use App\Event\TodoItemCompletedEvent;
-use App\Event\TodoListStatusChangedEvent;
 use App\Enum\TodoStatus;
+use App\Event\TodoItemCompletedEvent;
 use App\Event\TodoItemUncompletedEvent;
+use App\Event\TodoListStatusChangedEvent;
+use App\Message\MarkListItemsCompleteMessage;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use App\Message\MarkListItemsCompleteMessage;
 
 class TodoCompletionSubscriber implements EventSubscriberInterface
 {
@@ -32,14 +32,22 @@ class TodoCompletionSubscriber implements EventSubscriberInterface
     {
         $list = $event->getTodoItem()->getTodoList();
 
-        if (null === $list) return;
+        if (null === $list) {
+            return;
+        }
         $items = $list->getTodoItems();
 
-        if ($items->isEmpty()) return;
-        if ($list->getStatus() === TodoStatus::Done) return;
+        if ($items->isEmpty()) {
+            return;
+        }
+        if (TodoStatus::Done === $list->getStatus()) {
+            return;
+        }
 
         foreach ($items as $item) {
-            if (!$item->isCompleted()) return;
+            if (!$item->isCompleted()) {
+                return;
+            }
         }
 
         $previous = $list->getStatus();
@@ -51,8 +59,12 @@ class TodoCompletionSubscriber implements EventSubscriberInterface
     {
         $list = $event->getTodoItem()->getTodoList();
 
-        if (null === $list) return;
-        if ($list->getStatus() !== TodoStatus::Done) return;
+        if (null === $list) {
+            return;
+        }
+        if (TodoStatus::Done !== $list->getStatus()) {
+            return;
+        }
 
         $previous = $list->getStatus();
         $list->setStatus(TodoStatus::InProgress);
@@ -61,11 +73,15 @@ class TodoCompletionSubscriber implements EventSubscriberInterface
 
     public function onTodoListStatusChanged(TodoListStatusChangedEvent $event): void
     {
-        if ($event->getPreviousStatus() === TodoStatus::Done) return;
-        if ($event->getTodoList()->getStatus() !== TodoStatus::Done) return;
+        if (TodoStatus::Done === $event->getPreviousStatus()) {
+            return;
+        }
+        if (TodoStatus::Done !== $event->getTodoList()->getStatus()) {
+            return;
+        }
 
         $this->messageBus->dispatch(
             new MarkListItemsCompleteMessage($event->getTodoList()->getId())
-        ); 
+        );
     }
 }

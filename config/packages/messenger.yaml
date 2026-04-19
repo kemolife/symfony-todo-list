@@ -9,6 +9,7 @@ framework:
 
         routing:
             'App\Message\MarkListItemsCompleteMessage': sync
+            'App\Message\MoveDoneTodosToDeletedMessage': async
 
 when@test:
    framework:

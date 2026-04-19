@@ -2,8 +2,8 @@
 
 namespace App\Event;
 
-use Symfony\Contracts\EventDispatcher\Event;
 use App\Entity\TodoItem;
+use Symfony\Contracts\EventDispatcher\Event;
 
 class TodoItemCompletedEvent extends Event
 {

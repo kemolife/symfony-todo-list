@@ -2,9 +2,9 @@
 
 namespace App\Event;
 
-use Symfony\Contracts\EventDispatcher\Event;
 use App\Entity\TodoList;
 use App\Enum\TodoStatus;
+use Symfony\Contracts\EventDispatcher\Event;
 
 class TodoListStatusChangedEvent extends Event
 {

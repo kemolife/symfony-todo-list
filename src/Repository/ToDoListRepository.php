@@ -65,9 +65,9 @@ final class TodoListRepository extends ServiceEntityRepository
     /**
      * @return TodoList[]
      */
-    public function findAllAdmin(?int $userId, ?string $status, int $page, int $limit): array
+    public function findAllAdmin(?int $userId, ?string $status, int $page, int $limit, bool $includeDeleted = false): array
     {
-        return $this->buildAdminQuery($userId, $status)
+        return $this->buildAdminQuery($userId, $status, $includeDeleted)
             ->leftJoin('t.todoItems', 'ti')
             ->addSelect('ti')
             ->orderBy('t.createdAt', 'DESC')
@@ -77,15 +77,15 @@ final class TodoListRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function countAllAdmin(?int $userId, ?string $status): int
+    public function countAllAdmin(?int $userId, ?string $status, bool $includeDeleted = false): int
     {
-        return (int) $this->buildAdminQuery($userId, $status)
+        return (int) $this->buildAdminQuery($userId, $status, $includeDeleted)
             ->select('COUNT(t.id)')
             ->getQuery()
             ->getSingleScalarResult();
     }
 
-    private function buildAdminQuery(?int $userId, ?string $status): QueryBuilder
+    private function buildAdminQuery(?int $userId, ?string $status, bool $includeDeleted = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('t')
             ->leftJoin('t.owner', 'u');
@@ -95,9 +95,14 @@ final class TodoListRepository extends ServiceEntityRepository
                 ->setParameter('userId', $userId);
         }
 
-        if (null !== $status && null !== TodoStatus::tryFrom($status)) {
-            $qb->andWhere('t.status = :status')
-                ->setParameter('status', $status);
+        if ($includeDeleted) {
+            $qb->andWhere('t.deletedAt IS NOT NULL');
+        } else {
+            $resolvedStatus = null !== $status ? TodoStatus::tryFrom($status) : null;
+            if (null !== $resolvedStatus) {
+                $qb->andWhere('t.status = :status')
+                    ->setParameter('status', $status);
+            }
         }
 
         return $qb;
@@ -112,9 +117,9 @@ final class TodoListRepository extends ServiceEntityRepository
                 ->setParameter('owner', $owner);
         }
 
-        if (null !== $status && null !== TodoStatus::tryFrom($status)) {
-            $qb->andWhere('t.status = :status')
-                ->setParameter('status', $status);
+        $resolvedStatus = null !== $status ? TodoStatus::tryFrom($status) : null;
+        if (null !== $resolvedStatus) {
+            $qb->andWhere('t.status = :status')->setParameter('status', $status);
         }
 
         if (null !== $tag && '' !== $tag) {

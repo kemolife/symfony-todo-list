@@ -18,6 +18,7 @@ final readonly class AdminTodoResponse
         public ?string $ownerEmail,
         public string $createdAt,
         public string $updatedAt,
+        public ?string $deletedAt,
     ) {
     }
 
@@ -33,6 +34,7 @@ final readonly class AdminTodoResponse
             ownerEmail: $todo->getOwner()?->getEmail(),
             createdAt: $todo->getCreatedAt()->format(\DateTimeInterface::ATOM),
             updatedAt: $todo->getUpdatedAt()->format(\DateTimeInterface::ATOM),
+            deletedAt: $todo->getDeletedAt()?->format(\DateTimeInterface::ATOM),
         );
     }
 }

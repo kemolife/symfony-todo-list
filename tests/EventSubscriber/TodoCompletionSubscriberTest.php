@@ -27,7 +27,7 @@ final class TodoCompletionSubscriberTest extends WebTestCase
         $this->user = new User();
         $this->user->setEmail('subscriber@test.com');
         $this->user->setRoles(['ROLE_USER']);
-        $this->user->setPassword('$2y$04$' . str_repeat('a', 53));
+        $this->user->setPassword('$2y$04$'.str_repeat('a', 53));
         $this->em->persist($this->user);
         $this->em->flush();
 
@@ -82,6 +82,7 @@ final class TodoCompletionSubscriberTest extends WebTestCase
     private function freshList(int $id): TodoList
     {
         $this->em->clear();
+
         return $this->em->find(TodoList::class, $id);
     }
 
@@ -89,6 +90,7 @@ final class TodoCompletionSubscriberTest extends WebTestCase
     private function freshItem(int $id): TodoItem
     {
         $this->em->clear();
+
         return $this->em->find(TodoItem::class, $id);
     }
 
@@ -237,11 +239,11 @@ final class TodoCompletionSubscriberTest extends WebTestCase
 
     public function testSecondCompleteCycleAutoCompletesListAgain(): void
     {
-        $list  = $this->createList('Redo list');
+        $list = $this->createList('Redo list');
         $item1 = $this->createItem($list, 'Item 1');
         $item2 = $this->createItem($list, 'Item 2');
 
-        $listId  = $list->getId();
+        $listId = $list->getId();
         $item1Id = $item1->getId();
         $item2Id = $item2->getId();
 
@@ -265,12 +267,12 @@ final class TodoCompletionSubscriberTest extends WebTestCase
 
     public function testPutListDoneSecondTimeSetsAllItemsCompleted(): void
     {
-        $list  = $this->createList('Put redo list');
+        $list = $this->createList('Put redo list');
         $item1 = $this->createItem($list, 'Item 1');
         $item2 = $this->createItem($list, 'Item 2');
         $item3 = $this->createItem($list, 'Item 3');
 
-        $listId  = $list->getId();
+        $listId = $list->getId();
         $item1Id = $item1->getId();
         $item2Id = $item2->getId();
         $item3Id = $item3->getId();

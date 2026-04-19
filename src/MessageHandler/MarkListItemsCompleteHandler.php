@@ -1,11 +1,12 @@
 <?php
 
 namespace App\MessageHandler;
+
 use App\Enum\TodoStatus;
 use App\Message\MarkListItemsCompleteMessage;
 use App\Repository\TodoListRepository;
-use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
 #[AsMessageHandler]
 final class MarkListItemsCompleteHandler
@@ -19,8 +20,12 @@ final class MarkListItemsCompleteHandler
     public function __invoke(MarkListItemsCompleteMessage $message): void
     {
         $list = $this->todoListRepository->find($message->getTodoListId());
-        if (null === $list) return;
-        if ($list->getStatus() !== TodoStatus::Done) return;
+        if (null === $list) {
+            return;
+        }
+        if (TodoStatus::Done !== $list->getStatus()) {
+            return;
+        }
 
         $items = $list->getTodoItems();
 

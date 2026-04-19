@@ -68,8 +68,8 @@ function TotpSetup({ result }: { result: AdminRegisterResponse }) {
             </div>
           </div>
 
-          <Button asChild className="w-full">
-            <Link to="/login">Continue to sign in</Link>
+          <Button render={<Link to="/login" />} className="w-full">
+            Continue to sign in
           </Button>
         </CardContent>
       </Card>

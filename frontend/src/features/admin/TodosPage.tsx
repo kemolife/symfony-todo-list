@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { useAdminTodos } from '@/api/useAdminTodos'
+import { useAdminTodos, type AdminTodoFilterStatus } from '@/api/useAdminTodos'
 import { useUserSearch } from '@/api/useUsers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -114,17 +114,18 @@ const STATUS_VARIANTS: Record<TodoStatus, 'secondary' | 'outline' | 'default'> =
   done: 'default',
 }
 
+
 const LIMIT = 15
 
 export function TodosPage() {
   const [userId, setUserId] = useState<number | undefined>(undefined)
-  const [status, setStatus] = useState<TodoStatus | undefined>(undefined)
+  const [status, setStatus] = useState<AdminTodoFilterStatus | undefined>(undefined)
   const [page, setPage] = useState(1)
 
   const { data, isLoading, isError } = useAdminTodos({ userId, status, page, limit: LIMIT })
 
   const handleStatusChange = (value: string | null) => {
-    setStatus(!value || value === 'all' ? undefined : (value as TodoStatus))
+    setStatus(!value || value === 'all' ? undefined : (value as AdminTodoFilterStatus))
     setPage(1)
   }
 
@@ -149,6 +150,7 @@ export function TodosPage() {
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="in_progress">In Progress</SelectItem>
             <SelectItem value="done">Done</SelectItem>
+            <SelectItem value="deleted">Deleted</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -162,6 +164,9 @@ export function TodosPage() {
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Tag</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
+              {status === 'deleted' && (
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Deleted</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -173,12 +178,13 @@ export function TodosPage() {
                   <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
                   <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
                   <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                  {status === 'deleted' && <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>}
                 </tr>
               ))}
 
             {isError && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-sm text-destructive">
+                <td colSpan={status === 'deleted' ? 6 : 5} className="px-4 py-6 text-center text-sm text-destructive">
                   Failed to load todos.
                 </td>
               </tr>
@@ -186,14 +192,14 @@ export function TodosPage() {
 
             {!isLoading && data?.items.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                <td colSpan={status === 'deleted' ? 6 : 5} className="px-4 py-6 text-center text-sm text-muted-foreground">
                   No todos found.
                 </td>
               </tr>
             )}
 
             {data?.items.map((todo) => (
-              <tr key={todo.id} className="border-b last:border-0 hover:bg-muted/30">
+              <tr key={todo.id} className={`border-b last:border-0 hover:bg-muted/30 ${todo.deletedAt ? 'opacity-60' : ''}`}>
                 <td className="px-4 py-3 text-muted-foreground">{todo.ownerEmail ?? '—'}</td>
                 <td className="px-4 py-3 font-medium">{todo.name}</td>
                 <td className="px-4 py-3">
@@ -211,6 +217,11 @@ export function TodosPage() {
                 <td className="px-4 py-3 text-muted-foreground">
                   {new Date(todo.createdAt).toLocaleDateString()}
                 </td>
+                {status === 'deleted' && (
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {todo.deletedAt ? new Date(todo.deletedAt).toLocaleDateString() : '—'}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

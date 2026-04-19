@@ -8,12 +8,12 @@ use App\DTO\Request\TodoItemRequest;
 use App\DTO\Response\TodoItemResponse;
 use App\Entity\TodoItem;
 use App\Entity\TodoList;
+use App\Event\TodoItemCompletedEvent;
+use App\Event\TodoItemUncompletedEvent;
 use App\Repository\TodoItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use App\Event\TodoItemCompletedEvent;
-use App\Event\TodoItemUncompletedEvent;
 
 final class TodoItemService
 {
@@ -78,7 +78,7 @@ final class TodoItemService
 
         if (null !== $dto->isCompleted) {
             $item->setIsCompleted($dto->isCompleted);
-            if ($dto->isCompleted === true) {
+            if (true === $dto->isCompleted) {
                 $this->eventDispatcher->dispatch(new TodoItemCompletedEvent($item));
             } else {
                 $this->eventDispatcher->dispatch(new TodoItemUncompletedEvent($item));
