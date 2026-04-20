@@ -118,3 +118,35 @@ export function useDeleteTodoItem() {
     },
   })
 }
+
+export interface ImportResult {
+  created: number
+  failed: number
+  errors: string[]
+}
+
+export interface ColumnMap {
+  title: string
+  description: string
+  tag: string
+  status: string
+  items: string
+}
+
+export function useImportTodos() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ file, columnMap }: { file: File; columnMap: ColumnMap }) => {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('columnMap', JSON.stringify(columnMap))
+      const { data } = await api.post<ImportResult>('/api/todos/import', form, {
+        headers: { 'Content-Type': undefined },
+      })
+      return data
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
+    },
+  })
+}

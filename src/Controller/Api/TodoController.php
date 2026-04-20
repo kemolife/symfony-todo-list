@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\DTO\CsvColumnMap;
 use App\DTO\Request\TodoRequest;
 use App\Entity\User;
 use App\Enum\UserRole;
 use App\Security\TodoVoter;
+use App\Service\CsvImportService;
 use App\Service\TodoService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,11 +23,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(UserRole::User->value)]
 final class TodoController extends AbstractController
 {
-    public function __construct(private readonly TodoService $todoService)
-    {
+    public function __construct(
+        private readonly TodoService $todoService,
+        private readonly CsvImportService $csvImportService,
+    ) {
     }
 
-    // IMPORTANT: /tags must be declared BEFORE /{id} to avoid routing conflict
+    // IMPORTANT: /tags and /import must be declared BEFORE /{id} to avoid routing conflict
     #[Route('/tags', name: '_tags', methods: ['GET'])]
     public function tags(): JsonResponse
     {
@@ -33,6 +37,20 @@ final class TodoController extends AbstractController
         $user = $this->getUser();
 
         return $this->json($this->todoService->findAllTags($user));
+    }
+
+    #[Route('/import', name: '_import', methods: ['POST'])]
+    public function import(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $mapData = json_decode($request->request->get('columnMap', '{}'), true) ?? [];
+        $map = CsvColumnMap::fromArray($mapData);
+
+        $result = $this->csvImportService->parser($request->files->get('file'), $user, $map);
+
+        return $this->json($result);
     }
 
     #[Route('', name: '_list', methods: ['GET'])]
