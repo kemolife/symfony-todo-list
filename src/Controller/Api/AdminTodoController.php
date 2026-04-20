@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Enum\UserRole;
+use App\Service\AuditLogService;
 use App\Service\TodoService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -16,8 +17,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(UserRole::Admin->value)]
 final class AdminTodoController extends AbstractController
 {
-    public function __construct(private readonly TodoService $todoService)
-    {
+    public function __construct(
+        private readonly TodoService $todoService,
+        private readonly AuditLogService $auditLogService,
+    ) {
     }
 
     #[Route('', name: '_list', methods: ['GET'])]
@@ -33,5 +36,11 @@ final class AdminTodoController extends AbstractController
             page: $page,
             limit: $limit,
         ));
+    }
+
+    #[Route('/{id}/history', name: '_history', methods: ['GET'])]
+    public function history(int $id): JsonResponse
+    {
+        return $this->json($this->auditLogService->findByTodoListId($id));
     }
 }

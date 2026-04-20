@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { useAdminTodos, type AdminTodoFilterStatus } from '@/api/useAdminTodos'
+import { ChevronLeft, ChevronRight, History, X } from 'lucide-react'
+import { useAdminTodos, type AdminTodo, type AdminTodoFilterStatus } from '@/api/useAdminTodos'
+import { TodoHistoryDialog } from './TodoHistoryDialog'
 import { useUserSearch } from '@/api/useUsers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -121,6 +122,7 @@ export function TodosPage() {
   const [userId, setUserId] = useState<number | undefined>(undefined)
   const [status, setStatus] = useState<AdminTodoFilterStatus | undefined>(undefined)
   const [page, setPage] = useState(1)
+  const [historyTodo, setHistoryTodo] = useState<AdminTodo | null>(null)
 
   const { data, isLoading, isError } = useAdminTodos({ userId, status, page, limit: LIMIT })
 
@@ -167,6 +169,7 @@ export function TodosPage() {
               {status === 'deleted' && (
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Deleted</th>
               )}
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
@@ -222,11 +225,28 @@ export function TodosPage() {
                     {todo.deletedAt ? new Date(todo.deletedAt).toLocaleDateString() : '—'}
                   </td>
                 )}
+                <td className="px-4 py-3 text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setHistoryTodo(todo)}
+                  >
+                    <History className="h-3.5 w-3.5" />
+                    <span className="sr-only">History</span>
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <TodoHistoryDialog
+        todoId={historyTodo?.id ?? null}
+        todoName={historyTodo?.name ?? null}
+        onClose={() => setHistoryTodo(null)}
+      />
 
       {data && data.pages > 1 && (
         <div className="flex items-center justify-end gap-2">
