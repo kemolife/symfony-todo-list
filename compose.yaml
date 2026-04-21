@@ -27,6 +27,13 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
 ###< symfony/messenger ###
 
+###< symfony/cache ###
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+###< symfony/cache ###
+
 volumes:
   database_data:
   rabbitmq_data:

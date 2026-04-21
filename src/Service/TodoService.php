@@ -13,7 +13,10 @@ use App\Entity\User;
 use App\Event\TodoListStatusChangedEvent;
 use App\Repository\TodoListRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 final class TodoService
@@ -22,24 +25,32 @@ final class TodoService
         private readonly TodoListRepository $repository,
         private readonly EntityManagerInterface $em,
         private readonly EventDispatcherInterface $eventDispatcher,
+        #[Autowire(service: 'cache.todo')]
+        private readonly TagAwareCacheInterface $cache,
     ) {
     }
 
     public function findAll(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10, ?User $owner = null): PaginatedTodoResponse
     {
-        $total = $this->repository->countFiltered($status, $tag, $search, $owner);
-        $items = array_map(
-            TodoResponse::fromEntity(...),
-            $this->repository->findFiltered($status, $tag, $search, $page, $limit, $owner),
-        );
+        $cacheKey = sprintf('todos_%s_%s_%s_%s_%s_%s', $owner?->getId(), $status, $tag, $search, $page, $limit);
+        return $this->cache->get($cacheKey, function (ItemInterface $cacheItem) use ($status, $tag, $search, $page, $limit, $owner) {
+            $cacheItem->expiresAfter(3600);
+            $cacheItem->tag('todos');
 
-        return new PaginatedTodoResponse(
-            items: $items,
-            total: $total,
-            page: $page,
-            limit: $limit,
-            pages: $total > 0 ? (int) ceil($total / $limit) : 1,
-        );
+            $total = $this->repository->countFiltered($status, $tag, $search, $owner);
+            $items = array_map(
+                TodoResponse::fromEntity(...),
+                $this->repository->findFiltered($status, $tag, $search, $page, $limit, $owner),
+            );
+
+            return new PaginatedTodoResponse(
+                items: $items,
+                total: $total,
+                page: $page,
+                limit: $limit,
+                pages: $total > 0 ? (int) ceil($total / $limit) : 1,
+            );
+        });
     }
 
     public function findOne(int $id): TodoResponse
@@ -61,6 +72,7 @@ final class TodoService
 
         $this->em->persist($todo);
         $this->em->flush();
+        $this->cache->invalidateTags(['todos']);
 
         return TodoResponse::fromEntity($todo);
     }
@@ -84,6 +96,7 @@ final class TodoService
         }
 
         $this->em->flush();
+        $this->cache->invalidateTags(['todos']);
 
         return TodoResponse::fromEntity($todo);
     }
