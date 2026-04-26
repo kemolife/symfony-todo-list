@@ -45,6 +45,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     #[ORM\Column(length: 64, nullable: true, unique: true)]
     private ?string $enrollmentToken = null;
 
+    #[ORM\Column(length: 36, nullable: true, unique: true)]
+    private ?string $apiKey = null;
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $enrollmentTokenExpiresAt = null;
 
@@ -198,5 +201,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         }
 
         return new TotpConfiguration($this->topSecret, TotpConfiguration::ALGORITHM_SHA1, 30, 6);
+    }
+
+    public function getApiKey(): ?string
+    {
+        return $this->apiKey;
+    }
+
+    public function setApiKey(?string $apiKey): static
+    {
+        $this->apiKey = $apiKey;
+
+        return $this;
     }
 }

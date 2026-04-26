@@ -22,9 +22,12 @@ final class ExceptionListener
             ? $exception->getStatusCode()
             : Response::HTTP_INTERNAL_SERVER_ERROR;
 
+        $headers = $exception instanceof HttpExceptionInterface ? $exception->getHeaders() : [];
+
         $event->setResponse(new JsonResponse(
             ['error' => $exception->getMessage()],
             $statusCode,
+            $headers,
         ));
     }
 }

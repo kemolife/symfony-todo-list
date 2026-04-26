@@ -10,6 +10,7 @@ import { AdminLayout } from './features/admin/AdminLayout'
 import { DashboardOverview } from './features/admin/DashboardOverview'
 import { UsersPage } from './features/admin/UsersPage'
 import { TodosPage } from './features/admin/TodosPage'
+import { ApiKeysPage } from './features/admin/ApiKeysPage'
 import { TotpSetupPage } from './features/auth/TotpSetupPage'
 import { EnrollPage } from './features/auth/EnrollPage'
 
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardOverview />} />
           <Route path="/dashboard/users" element={<UsersPage />} />
           <Route path="/dashboard/todos" element={<TodosPage />} />
+          <Route path="/dashboard/api-keys" element={<ApiKeysPage />} />
         </Route>
       </Route>
     </Routes>

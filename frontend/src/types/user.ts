@@ -3,6 +3,7 @@ export interface User {
   email: string
   roles: string[]
   hasTwoFactor: boolean
+  hasApiKey: boolean
 }
 
 export type UserRole = 'admin' | 'user'

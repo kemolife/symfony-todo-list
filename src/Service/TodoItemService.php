@@ -14,6 +14,8 @@ use App\Repository\TodoItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 final class TodoItemService
 {
@@ -21,6 +23,8 @@ final class TodoItemService
         private readonly TodoItemRepository $todoItemRepository,
         private readonly EntityManagerInterface $em,
         private readonly EventDispatcherInterface $eventDispatcher,
+        #[Autowire(service: 'cache.todo')]
+        private readonly TagAwareCacheInterface $cache,
     ) {
     }
 
@@ -64,6 +68,7 @@ final class TodoItemService
 
         $this->em->persist($item);
         $this->em->flush();
+        $this->cache->invalidateTags(['todos']);
 
         return TodoItemResponse::fromEntity($item);
     }
@@ -90,6 +95,7 @@ final class TodoItemService
         }
 
         $this->em->flush();
+        $this->cache->invalidateTags(['todos']);
 
         return TodoItemResponse::fromEntity($item);
     }
@@ -99,5 +105,6 @@ final class TodoItemService
         $item = $this->findOneForTodo($itemId, $todoListId);
         $this->em->remove($item);
         $this->em->flush();
+        $this->cache->invalidateTags(['todos']);
     }
 }

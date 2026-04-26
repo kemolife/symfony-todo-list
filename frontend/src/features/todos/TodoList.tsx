@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, ClipboardList, ChevronLeft, ChevronRight, LogOut, Upload, X } from 'lucide-react'
+import { Plus, ClipboardList, ChevronLeft, ChevronRight, LogOut, Upload, X, KeyRound } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { TodoCard } from './TodoCard'
 import { TodoFilters } from './TodoFilters'
 import { TodoForm } from './TodoForm'
+import { ApiKeyDialog } from './ApiKeyDialog'
 import { useNavigate } from 'react-router-dom'
 
 function TodoSkeleton() {
@@ -99,6 +100,7 @@ export function TodoList() {
   const [importHadErrors, setImportHadErrors] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [showApiKey, setShowApiKey] = useState(false)
   const dragCounter = useRef(0)
 
   const handleLogout = () => {
@@ -200,6 +202,9 @@ export function TodoList() {
             <Plus className="h-4 w-4" />
             New todo
           </Button>
+          <Button variant="outline" size="icon" onClick={() => setShowApiKey(true)} title="API key">
+            <KeyRound className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={handleLogout} title="Sign out">
             <LogOut className="h-4 w-4" />
           </Button>
@@ -277,6 +282,8 @@ export function TodoList() {
           onClose={() => setPendingFile(null)}
         />
       )}
+
+      <ApiKeyDialog open={showApiKey} onClose={() => setShowApiKey(false)} />
 
       {/* Drag & drop overlay */}
       {isDragging && (

@@ -1,0 +1,14 @@
+vendor/
+var/
+.env.local
+.env.*.local
+.env.docker
+.env.docker.local
+.git/
+.idea/
+.vscode/
+frontend/node_modules/
+frontend/dist/
+node_modules/
+.php-cs-fixer.cache
+.phpunit.cache/

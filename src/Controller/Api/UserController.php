@@ -87,4 +87,12 @@ final class UserController extends AbstractController
 
         return $this->json(['message' => 'User deleted']);
     }
+
+    #[Route('/{id}/api-key', name: 'api_user_revoke_api_key', methods: ['DELETE'])]
+    public function revokeApiKey(int $id): JsonResponse
+    {
+        $this->userService->revokeUserApiKey($id);
+
+        return $this->json(null, Response::HTTP_NO_CONTENT);
+    }
 }

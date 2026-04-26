@@ -106,6 +106,7 @@ final class TodoService
         $todo = $this->findOrFail($id);
         $this->em->remove($todo);
         $this->em->flush();
+        $this->cache->invalidateTags(['todos']);
     }
 
     public function findAllForAdmin(?int $userId, ?string $status, int $page, int $limit): PaginatedTodoResponse

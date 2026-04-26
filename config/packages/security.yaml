@@ -24,6 +24,8 @@ security:
                 success_handler: App\Security\TwoFactorAuthSuccessHandler
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
             lazy: true
+            custom_authenticators:
+                - App\Security\ApiKeyAuthenticator
             jwt: ~
             provider: app_user_provider
 

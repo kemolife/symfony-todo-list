@@ -1,5 +1,5 @@
 import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, LogOut, ListTodo } from 'lucide-react'
+import { LayoutDashboard, Users, LogOut, ListTodo, KeyRound } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/dashboard/users', label: 'Users', icon: Users, end: false },
   { to: '/dashboard/todos', label: 'Todos', icon: ListTodo, end: false },
+  { to: '/dashboard/api-keys', label: 'API Keys', icon: KeyRound, end: false },
 ]
 
 export function AdminLayout() {

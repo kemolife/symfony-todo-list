@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, Trash2, ShieldCheck } from 'lucide-react'
+import { Plus, Pencil, Trash2, ShieldCheck, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/api/useUsers'
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useRevokeUserApiKey } from '@/api/useUsers'
 import { useAuthStore } from '@/store/authStore'
 import type { User } from '@/types/user'
 import { Button } from '@/components/ui/button'
@@ -300,9 +300,19 @@ function DeleteUserDialog({ user, onClose }: { user: User | null; onClose: () =>
 
 export function UsersPage() {
   const { data: users, isLoading, isError } = useUsers()
+  const revokeApiKey = useRevokeUserApiKey()
   const [showCreate, setShowCreate] = useState(false)
   const [editUser, setEditUser] = useState<User | null>(null)
   const [deleteUser, setDeleteUser] = useState<User | null>(null)
+
+  const handleRevokeApiKey = async (user: User) => {
+    try {
+      await revokeApiKey.mutateAsync(user.id)
+      toast.success(`API key revoked for ${user.email}`)
+    } catch {
+      toast.error('Failed to revoke API key')
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -322,6 +332,7 @@ export function UsersPage() {
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Roles</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">2FA</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">API Key</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
@@ -333,13 +344,14 @@ export function UsersPage() {
                   <td className="px-4 py-3"><Skeleton className="h-4 w-40" /></td>
                   <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
                   <td className="px-4 py-3"><Skeleton className="h-4 w-8" /></td>
+                  <td className="px-4 py-3"><Skeleton className="h-4 w-8" /></td>
                   <td className="px-4 py-3" />
                 </tr>
               ))}
 
             {isError && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-sm text-destructive">
+                <td colSpan={6} className="px-4 py-6 text-center text-sm text-destructive">
                   Failed to load users.
                 </td>
               </tr>
@@ -347,7 +359,7 @@ export function UsersPage() {
 
             {users?.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-sm text-muted-foreground">
+                <td colSpan={6} className="px-4 py-6 text-center text-sm text-muted-foreground">
                   No users found.
                 </td>
               </tr>
@@ -372,6 +384,13 @@ export function UsersPage() {
                   )}
                 </td>
                 <td className="px-4 py-3">
+                  {user.hasApiKey ? (
+                    <KeyRound className="h-4 w-4 text-blue-500" />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="ghost"
@@ -381,6 +400,17 @@ export function UsersPage() {
                     >
                       <Pencil className="h-3.5 w-3.5" />
                       <span className="sr-only">Edit</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      disabled={!user.hasApiKey || revokeApiKey.isPending}
+                      onClick={() => handleRevokeApiKey(user)}
+                      title={user.hasApiKey ? 'Revoke API key' : 'No API key'}
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                      <span className="sr-only">Revoke API key</span>
                     </Button>
                     <Button
                       variant="ghost"
