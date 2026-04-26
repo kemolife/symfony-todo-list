@@ -6,6 +6,7 @@ namespace App\Controller\Api;
 
 use App\DTO\CsvColumnMap;
 use App\DTO\Request\TodoRequest;
+use App\DTO\Response\TodoResponse;
 use App\Entity\User;
 use App\Enum\UserRole;
 use App\Security\TodoVoter;
@@ -33,6 +34,8 @@ final class TodoController extends AbstractController
     #[Route('/tags', name: '_tags', methods: ['GET'])]
     public function tags(): JsonResponse
     {
+        $this->denyAccessUnlessGranted(TodoVoter::READ, null);
+
         /** @var User $user */
         $user = $this->getUser();
 
@@ -42,6 +45,8 @@ final class TodoController extends AbstractController
     #[Route('/import', name: '_import', methods: ['POST'])]
     public function import(Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted(TodoVoter::CREATE, null);
+
         /** @var User $user */
         $user = $this->getUser();
 
@@ -56,6 +61,8 @@ final class TodoController extends AbstractController
     #[Route('', name: '_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
+        $this->denyAccessUnlessGranted(TodoVoter::READ, null);
+
         /** @var User $user */
         $user = $this->getUser();
         $page = max(1, $request->query->getInt('page', 1));
@@ -74,6 +81,8 @@ final class TodoController extends AbstractController
     #[Route('', name: '_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] TodoRequest $dto): JsonResponse
     {
+        $this->denyAccessUnlessGranted(TodoVoter::CREATE, null);
+
         /** @var User $user */
         $user = $this->getUser();
 
@@ -83,7 +92,10 @@ final class TodoController extends AbstractController
     #[Route('/{id}', name: '_one', methods: ['GET'])]
     public function one(int $id): JsonResponse
     {
-        return $this->json($this->todoService->findOne($id));
+        $todo = $this->todoService->getEntity($id);
+        $this->denyAccessUnlessGranted(TodoVoter::READ, $todo);
+
+        return $this->json(TodoResponse::fromEntity($todo));
     }
 
     #[Route('/{id}', name: '_update', methods: ['PUT'])]

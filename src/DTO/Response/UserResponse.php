@@ -13,7 +13,7 @@ final class UserResponse
         public readonly string $email,
         public readonly array $roles,
         public readonly bool $hasTwoFactor,
-        public readonly bool $hasApiKey,
+        public readonly int $apiKeyCount,
         public readonly ?string $totpSecret = null,
         public readonly ?string $totpUri = null,
     ) {
@@ -26,7 +26,7 @@ final class UserResponse
             email: $user->getUserIdentifier(),
             roles: $user->getRoles(),
             hasTwoFactor: $user->isTotpAuthenticationEnabled(),
-            hasApiKey: null !== $user->getApiKey(),
+            apiKeyCount: $user->getApiKeys()->count(),
             totpSecret: null !== $totpUri ? $user->getTopSecret() : null,
             totpUri: $totpUri,
         );

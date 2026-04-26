@@ -29,6 +29,9 @@ final class TodoItemController extends AbstractController
     #[Route('', name: '_list', methods: ['GET'])]
     public function list(int $id): JsonResponse
     {
+        $todo = $this->todoService->getEntity($id);
+        $this->denyAccessUnlessGranted(TodoVoter::READ, $todo);
+
         return $this->json($this->todoItemService->findAllByTodoListId($id));
     }
 

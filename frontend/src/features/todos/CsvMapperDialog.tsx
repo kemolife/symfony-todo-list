@@ -57,7 +57,7 @@ function buildDefaultMap(headers: string[]): ColumnMap {
   const find = (...candidates: string[]) => {
     for (const c of candidates) {
       const idx = lower.indexOf(c)
-      if (idx !== -1) return headers[idx]
+      if (idx !== -1) return headers[idx] ?? ''
     }
     return ''
   }

@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Pencil, Trash2, ShieldCheck, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
-import { useUsers, useCreateUser, useUpdateUser, useDeleteUser, useRevokeUserApiKey } from '@/api/useUsers'
+import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '@/api/useUsers'
+import { UserApiKeysDialog } from './UserApiKeysDialog'
 import { useAuthStore } from '@/store/authStore'
 import type { User } from '@/types/user'
 import { Button } from '@/components/ui/button'
@@ -300,19 +301,10 @@ function DeleteUserDialog({ user, onClose }: { user: User | null; onClose: () =>
 
 export function UsersPage() {
   const { data: users, isLoading, isError } = useUsers()
-  const revokeApiKey = useRevokeUserApiKey()
   const [showCreate, setShowCreate] = useState(false)
   const [editUser, setEditUser] = useState<User | null>(null)
   const [deleteUser, setDeleteUser] = useState<User | null>(null)
-
-  const handleRevokeApiKey = async (user: User) => {
-    try {
-      await revokeApiKey.mutateAsync(user.id)
-      toast.success(`API key revoked for ${user.email}`)
-    } catch {
-      toast.error('Failed to revoke API key')
-    }
-  }
+  const [managingKeysUser, setManagingKeysUser] = useState<User | null>(null)
 
   return (
     <div className="space-y-4">
@@ -332,7 +324,7 @@ export function UsersPage() {
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Roles</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">2FA</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">API Key</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Keys</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
@@ -384,8 +376,11 @@ export function UsersPage() {
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  {user.hasApiKey ? (
-                    <KeyRound className="h-4 w-4 text-blue-500" />
+                  {user.apiKeyCount > 0 ? (
+                    <Badge variant="secondary" className="text-xs">
+                      <KeyRound className="mr-1 h-3 w-3" />
+                      {user.apiKeyCount}
+                    </Badge>
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
@@ -404,13 +399,12 @@ export function UsersPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      disabled={!user.hasApiKey || revokeApiKey.isPending}
-                      onClick={() => handleRevokeApiKey(user)}
-                      title={user.hasApiKey ? 'Revoke API key' : 'No API key'}
+                      className="h-8 w-8 text-muted-foreground"
+                      onClick={() => setManagingKeysUser(user)}
+                      title="Manage API keys"
                     >
                       <KeyRound className="h-3.5 w-3.5" />
-                      <span className="sr-only">Revoke API key</span>
+                      <span className="sr-only">Manage API keys</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -432,6 +426,11 @@ export function UsersPage() {
       <CreateUserDialog open={showCreate} onClose={() => setShowCreate(false)} />
       <EditUserDialog user={editUser} onClose={() => setEditUser(null)} />
       <DeleteUserDialog user={deleteUser} onClose={() => setDeleteUser(null)} />
+      <UserApiKeysDialog
+        userId={managingKeysUser?.id ?? null}
+        userEmail={managingKeysUser?.email ?? null}
+        onClose={() => setManagingKeysUser(null)}
+      />
     </div>
   )
 }

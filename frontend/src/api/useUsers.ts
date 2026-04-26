@@ -76,12 +76,3 @@ export function useDeleteUser() {
   })
 }
 
-export function useRevokeUserApiKey() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: number) => {
-      await api.delete(`/api/users/${id}/api-key`)
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
-  })
-}

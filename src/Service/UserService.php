@@ -167,25 +167,4 @@ final class UserService
         $this->userRepository->remove($user);
     }
 
-    public function revokeUserApiKey(int $id): void
-    {
-        $this->revokeApiKey($this->getUser($id));
-    }
-
-    public function generateApiKey(User $user): User
-    {       
-        $apiKey = bin2hex(random_bytes(18));
-        $user->setApiKey($apiKey);
-        $this->userRepository->save($user);
-
-        return $user;
-    }
-
-    public function revokeApiKey(User $user): User
-    {
-        $user->setApiKey(null);
-        $this->userRepository->save($user);
-
-        return $user;
-    }
 }

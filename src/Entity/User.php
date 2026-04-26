@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Enum\UserRole;
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Scheb\TwoFactorBundle\Model\Totp\TotpConfiguration;
 use Scheb\TwoFactorBundle\Model\Totp\TotpConfigurationInterface;
@@ -45,11 +47,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     #[ORM\Column(length: 64, nullable: true, unique: true)]
     private ?string $enrollmentToken = null;
 
-    #[ORM\Column(length: 36, nullable: true, unique: true)]
-    private ?string $apiKey = null;
-
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $enrollmentTokenExpiresAt = null;
+
+    #[ORM\OneToMany(targetEntity: ApiKey::class, mappedBy: 'user', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $apiKeys;
+
+    public function __construct()
+    {
+        $this->apiKeys = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -203,15 +210,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
         return new TotpConfiguration($this->topSecret, TotpConfiguration::ALGORITHM_SHA1, 30, 6);
     }
 
-    public function getApiKey(): ?string
+    public function getApiKeys(): Collection
     {
-        return $this->apiKey;
-    }
-
-    public function setApiKey(?string $apiKey): static
-    {
-        $this->apiKey = $apiKey;
-
-        return $this;
+        return $this->apiKeys;
     }
 }
