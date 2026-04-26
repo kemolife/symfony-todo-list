@@ -47,10 +47,9 @@ services:
 
 ###< symfony/backend ###
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file: .env.docker
+    build: ./backend
+    volumes: [./backend:/app]
+    env_file: ./backend/.env.docker
     ports:
       - "8080:80"
     depends_on:
@@ -64,11 +63,10 @@ services:
 
 ###< symfony/messeger-cosumer ###
   messenger:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file: .env.docker
-    command: php bin/console messenger:consume async --time-limit=3600 -vv
+    build: ./backend
+    command: php bin/console messenger:consume async -vv
+    volumes: [./backend:/app]
+    env_file: ./backend/.env.docker
     restart: unless-stopped
     depends_on:
       database:
