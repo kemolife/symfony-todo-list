@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\AuditLogAction;
 use App\Repository\AuditLogRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -26,9 +27,8 @@ class AuditLog
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $entityName;
 
-    /** created | updated | deleted */
-    #[ORM\Column(length: 20)]
-    private string $action;
+    #[ORM\Column(enumType: AuditLogAction::class, length: 20)]
+    private AuditLogAction $action;
 
     /** [{field, from, to}, ...] — null for created/deleted */
     #[ORM\Column(type: 'json', nullable: true)]
@@ -44,7 +44,7 @@ class AuditLog
         string $entityType,
         int $entityId,
         ?string $entityName,
-        string $action,
+        AuditLogAction $action,
         ?array $changes,
         string $actorEmail,
     ) {
@@ -77,7 +77,7 @@ class AuditLog
         return $this->entityName;
     }
 
-    public function getAction(): string
+    public function getAction(): AuditLogAction
     {
         return $this->action;
     }

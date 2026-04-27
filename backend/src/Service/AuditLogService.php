@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\DTO\Response\AuditLogResponse;
+use App\Enum\AuditLogAction;
 use App\Repository\AuditLogRepository;
 use App\Repository\TodoItemRepository;
 use App\Repository\TodoListRepository;
@@ -21,9 +22,18 @@ final class AuditLogService
     ) {
     }
 
-    /**
-     * @return AuditLogResponse[]
-     */
+    /** @return AuditLogResponse[] */
+    public function findRecent(int $limit, ?string $action): array
+    {
+        $limit = min(max(1, $limit), 50);
+
+        return array_map(
+            AuditLogResponse::fromEntity(...),
+            $this->auditRepo->findRecent($limit, AuditLogAction::tryFrom($action ?? '')),
+        );
+    }
+
+    /** @return AuditLogResponse[] */
     public function findByTodoListId(int $todoListId): array
     {
         $this->em->getFilters()->disable('softdeleteable');

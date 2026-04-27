@@ -1,0 +1,10 @@
+aws_region  = "eu-west-1"
+name        = "symfony-app"
+azs         = ["eu-west-1a", "eu-west-1b"]
+
+db_name     = "app"
+db_username = "app"
+db_password = "CHANGE_ME"
+
+mq_username = "app"
+mq_password = "CHANGE_ME"

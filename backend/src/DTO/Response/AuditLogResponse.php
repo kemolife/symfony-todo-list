@@ -30,7 +30,7 @@ final readonly class AuditLogResponse
             entityType: $log->getEntityType(),
             entityId: $log->getEntityId(),
             entityName: $log->getEntityName(),
-            action: $log->getAction(),
+            action: $log->getAction()->value,
             changes: $log->getChanges(),
             actorEmail: $log->getActorEmail(),
             occurredAt: $log->getOccurredAt()->format(\DateTimeInterface::ATOM),

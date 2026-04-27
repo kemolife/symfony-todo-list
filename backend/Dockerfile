@@ -30,13 +30,12 @@ COPY . .
 
 RUN composer dump-autoload --optimize
 
- # Generate JWT keys if not present in build context (e.g. gitignored on fresh clone)
-RUN mkdir -p config/jwt \
-    && if [ ! -f config/jwt/private.pem ]; then \
-        openssl genrsa -out config/jwt/private.pem 4096 \
-        && openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem; \
-    fi
+RUN mkdir -p var/cache var/log var/share config/jwt && chmod -R 777 var/
 
-RUN mkdir -p var/cache var/log var/share && chmod -R 777 var/
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["--config", "/etc/frankenphp/Caddyfile", "--adapter", "caddyfile"]

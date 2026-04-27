@@ -7,6 +7,7 @@ namespace App\EventListener;
 use App\Entity\AuditLog;
 use App\Entity\TodoItem;
 use App\Entity\TodoList;
+use App\Enum\AuditLogAction;
 use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Event\PostPersistEventArgs;
@@ -44,7 +45,7 @@ class AuditLogListener
             return;
         }
 
-        $this->pendingLogs[] = $this->buildLog($entity, 'created', null);
+        $this->pendingLogs[] = $this->buildLog($entity, AuditLogAction::Created, null);
     }
 
     public function preUpdate(PreUpdateEventArgs $args): void
@@ -56,7 +57,7 @@ class AuditLogListener
 
         // Soft-delete: deletedAt goes from null → datetime
         if ($args->hasChangedField('deletedAt') && null !== $args->getNewValue('deletedAt')) {
-            $this->pendingLogs[] = $this->buildLog($entity, 'deleted', null);
+            $this->pendingLogs[] = $this->buildLog($entity, AuditLogAction::Deleted, null);
 
             return;
         }
@@ -76,7 +77,7 @@ class AuditLogListener
         }
 
         if (!empty($changeset)) {
-            $this->pendingLogs[] = $this->buildLog($entity, 'updated', $changeset);
+            $this->pendingLogs[] = $this->buildLog($entity, AuditLogAction::Updated, $changeset);
         }
     }
 
@@ -87,7 +88,7 @@ class AuditLogListener
             return;
         }
 
-        $this->pendingLogs[] = $this->buildLog($entity, 'deleted', null);
+        $this->pendingLogs[] = $this->buildLog($entity, AuditLogAction::Deleted, null);
     }
 
     public function postFlush(PostFlushEventArgs $args): void
@@ -106,7 +107,7 @@ class AuditLogListener
         $em->flush();
     }
 
-    private function buildLog(object $entity, string $action, ?array $changes): AuditLog
+    private function buildLog(object $entity, AuditLogAction $action, ?array $changes): AuditLog
     {
         $entityType = match($entity::class) {
             TodoList::class => 'todo_list',

@@ -27,21 +27,21 @@ services:
 ###< symfony/backend ###
   backend:
     volumes:
-      - ./src:/app/src
-      - ./config:/app/config
-      - ./migrations:/app/migrations
-      - ./public:/app/public
-      - ./templates:/app/templates
-      - ./bin:/app/bin
-      - ./var:/app/var
+      - ./backend/src:/app/src
+      - ./backend/config:/app/config
+      - ./backend/migrations:/app/migrations
+      - ./backend/public:/app/public
+      - ./backend/templates:/app/templates
+      - ./backend/bin:/app/bin
+      - ./backend/var:/app/var
 ###< symfony/backend ###
 
 ###< symfony/messeger-cosumer ###
   messenger:
     volumes:
-      - ./src:/app/src
-      - ./config:/app/config
-      - ./var:/app/var
+      - ./backend/src:/app/src
+      - ./backend/config:/app/config
+      - ./backend/var:/app/var
 ###< symfony/messeger-cosumer ###
 
 ###< react/frontend ###
