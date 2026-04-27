@@ -33,6 +33,7 @@ final class TodoService
     public function findAll(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10, ?User $owner = null): PaginatedTodoResponse
     {
         $cacheKey = sprintf('todos_%s_%s_%s_%s_%s_%s', $owner?->getId(), $status, $tag, $search, $page, $limit);
+
         return $this->cache->get($cacheKey, function (ItemInterface $cacheItem) use ($status, $tag, $search, $page, $limit, $owner) {
             $cacheItem->expiresAfter(3600);
             $cacheItem->tag('todos');

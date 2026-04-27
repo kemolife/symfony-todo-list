@@ -166,5 +166,4 @@ final class UserService
         $user = $this->getUser($id);
         $this->userRepository->remove($user);
     }
-
 }

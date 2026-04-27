@@ -37,7 +37,7 @@ final class CsvImportService
             ->setHeaderOffset(0);
 
         $renamedHeaders = array_map(
-            fn(string $head) => $map->getDtoProperty($head) ?? $head,
+            fn (string $head) => $map->getDtoProperty($head) ?? $head,
             $csv->getHeader(),
         );
 
@@ -53,7 +53,7 @@ final class CsvImportService
             $violations = $this->validator->validate($dto);
 
             if (count($violations) > 0) {
-                $failed++;
+                ++$failed;
                 foreach ($violations as $violation) {
                     $errors[] = sprintf('Row %d (%s): %s', $i + 1, $violation->getPropertyPath(), $violation->getMessage());
                 }
@@ -77,10 +77,10 @@ final class CsvImportService
             }
 
             $this->em->persist($todoList);
-            $created++;
+            ++$created;
 
-            $batch++;
-            if ($batch % self::BATCH_SIZE === 0) {
+            ++$batch;
+            if (0 === $batch % self::BATCH_SIZE) {
                 $this->em->flush();
                 $this->em->clear();
                 $ownerRef = $this->em->getReference(User::class, $ownerId);

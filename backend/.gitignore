@@ -24,4 +24,6 @@
 ###< lexik/jwt-authentication-bundle ###
 
 .env.docker.local
+.env.docker
+.env.dev
 completion.sh

@@ -4,7 +4,6 @@ namespace App\Controller\Api;
 
 use App\DTO\Request\CreateAdminRequest;
 use App\Service\UserService;
-use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Totp\TotpAuthenticatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -19,7 +18,6 @@ final class AdminController extends AbstractController
 {
     public function __construct(
         private readonly UserService $userService,
-        private readonly JWTTokenManagerInterface $jwtManager,
         private readonly TotpAuthenticatorInterface $totpAuthenticator,
         #[Autowire('%env(ADMIN_SECRET)%')] private readonly string $adminRegistrationSecret,
     ) {
@@ -33,10 +31,9 @@ final class AdminController extends AbstractController
         }
 
         $user = $this->userService->createAdmin($createAdminRequest);
-        $token = $this->jwtManager->create($user);
 
         return $this->json([
-            'token' => $token,
+            'message' => 'Admin registered. Set up your authenticator app then log in.',
             'totp_secret' => $user->getTopSecret(),
             'totp_uri' => $this->totpAuthenticator->getQRContent($user),
         ], Response::HTTP_CREATED);

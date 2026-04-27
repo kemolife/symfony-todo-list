@@ -9,12 +9,14 @@ use App\Entity\User;
 use App\Enum\UserRole;
 use App\Repository\UserRepository;
 use App\Service\UserService;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\BlockedTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Totp\TotpAuthenticatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -29,6 +31,7 @@ final class AuthController extends AbstractController
     public function __construct(
         private readonly UserService $userService,
         private readonly JWTTokenManagerInterface $jwtManager,
+        private readonly BlockedTokenManagerInterface $blockedTokenManager,
         private readonly UserRepository $userRepository,
         private readonly TotpAuthenticatorInterface $totpAuthenticator,
         #[Autowire(service: 'cache.app')] private readonly CacheItemPoolInterface $cache,
@@ -116,9 +119,14 @@ final class AuthController extends AbstractController
     }
 
     #[Route('/logout', name: 'api_auth_logout', methods: ['POST'])]
-    public function logout(): JsonResponse
+    public function logout(Request $request): JsonResponse
     {
-        $this->jwtManager->logout($this->getUser());
+        $rawToken = str_replace('Bearer ', '', $request->headers->get('Authorization', ''));
+
+        if ('' !== $rawToken) {
+            $payload = $this->jwtManager->parse($rawToken);
+            $this->blockedTokenManager->add($payload);
+        }
 
         return $this->json(['message' => 'Logged out successfully']);
     }

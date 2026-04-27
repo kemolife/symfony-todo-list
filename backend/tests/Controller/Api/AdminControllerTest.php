@@ -45,16 +45,16 @@ final class AdminControllerTest extends WebTestCase
         ], $overrides);
     }
 
-    public function testCreateAdminReturnsTokenAndTotpData(): void
+    public function testCreateAdminReturnsTotpDataWithoutToken(): void
     {
         $this->postJson('/api/admin/register', $this->validPayload());
 
         self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
         $data = json_decode($this->client->getResponse()->getContent(), true);
-        self::assertArrayHasKey('token', $data);
+        self::assertArrayNotHasKey('token', $data);
+        self::assertArrayHasKey('message', $data);
         self::assertArrayHasKey('totp_secret', $data);
         self::assertArrayHasKey('totp_uri', $data);
-        self::assertNotEmpty($data['token']);
         self::assertNotEmpty($data['totp_secret']);
         self::assertStringStartsWith('otpauth://totp/', $data['totp_uri']);
     }

@@ -6,7 +6,7 @@ namespace App\Enum;
 
 enum ApiKeyPermission: string
 {
-    case Read   = 'read';
-    case Write  = 'write';
+    case Read = 'read';
+    case Write = 'write';
     case Delete = 'delete';
 }

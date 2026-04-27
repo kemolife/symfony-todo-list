@@ -16,9 +16,9 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 final class TodoVoter extends Voter
 {
-    public const string READ   = 'TODO_READ';
+    public const string READ = 'TODO_READ';
     public const string CREATE = 'TODO_CREATE';
-    public const string EDIT   = 'TODO_EDIT';
+    public const string EDIT = 'TODO_EDIT';
     public const string DELETE = 'TODO_DELETE';
 
     protected function supports(string $attribute, mixed $subject): bool
@@ -50,9 +50,9 @@ final class TodoVoter extends Voter
         // For API key tokens: enforce per-key permission before ownership
         if ($token instanceof ApiKeyToken) {
             $required = match ($attribute) {
-                self::READ   => ApiKeyPermission::Read,
+                self::READ => ApiKeyPermission::Read,
                 self::CREATE => ApiKeyPermission::Write,
-                self::EDIT   => ApiKeyPermission::Write,
+                self::EDIT => ApiKeyPermission::Write,
                 self::DELETE => ApiKeyPermission::Delete,
             };
 

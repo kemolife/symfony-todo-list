@@ -26,11 +26,11 @@ class TodoImportDto
     public static function fromRecord(array $record): self
     {
         $dto = new self();
-        $dto->title       = $record['title'] ?? null;
+        $dto->title = $record['title'] ?? null;
         $dto->description = $record['description'] ?? null;
-        $dto->tag         = $record['tag'] ?? null;
-        $dto->status      = $record['status'] ?? null;
-        $dto->items       = $record['items'] ?? null;
+        $dto->tag = $record['tag'] ?? null;
+        $dto->status = $record['status'] ?? null;
+        $dto->items = $record['items'] ?? null;
 
         return $dto;
     }
@@ -38,7 +38,7 @@ class TodoImportDto
     /** @return string[] */
     public function getItemTitles(): array
     {
-        if ($this->items === null || $this->items === '') {
+        if (null === $this->items || '' === $this->items) {
             return [];
         }
 

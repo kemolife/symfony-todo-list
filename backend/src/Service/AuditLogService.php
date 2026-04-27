@@ -48,7 +48,7 @@ final class AuditLogService
         }
 
         $itemIds = array_map(
-            static fn($item) => $item->getId(),
+            static fn ($item) => $item->getId(),
             $this->todoItemRepo->findBy(['todoList' => $todoListId]),
         );
 

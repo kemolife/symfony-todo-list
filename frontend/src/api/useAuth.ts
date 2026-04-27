@@ -26,7 +26,7 @@ interface AdminRegisterCredentials {
 }
 
 export interface AdminRegisterResponse {
-  token: string
+  message: string
   totp_secret: string
   totp_uri: string
 }

@@ -29,17 +29,17 @@ final readonly class CsvColumnMap
 
     public function getDtoProperty(string $csvHeader): ?string
     {
-        if ($csvHeader === '') {
+        if ('' === $csvHeader) {
             return null;
         }
 
         return match (true) {
-            $this->title !== '' && $csvHeader === $this->title             => 'title',
-            $this->description !== '' && $csvHeader === $this->description => 'description',
-            $this->tag !== '' && $csvHeader === $this->tag                 => 'tag',
-            $this->status !== '' && $csvHeader === $this->status           => 'status',
-            $this->items !== '' && $csvHeader === $this->items             => 'items',
-            default                                                        => null,
+            '' !== $this->title && $csvHeader === $this->title => 'title',
+            '' !== $this->description && $csvHeader === $this->description => 'description',
+            '' !== $this->tag && $csvHeader === $this->tag => 'tag',
+            '' !== $this->status && $csvHeader === $this->status => 'status',
+            '' !== $this->items && $csvHeader === $this->items => 'items',
+            default => null,
         };
     }
 }

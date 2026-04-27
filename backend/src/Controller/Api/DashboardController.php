@@ -14,7 +14,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(UserRole::Admin->value)]
 final class DashboardController extends AbstractController
 {
-    public function __construct(private readonly AuditLogService $auditLogService) {}
+    public function __construct(private readonly AuditLogService $auditLogService)
+    {
+    }
 
     #[Route('/', name: 'api_dashboard_index', methods: ['GET'])]
     public function index(): JsonResponse

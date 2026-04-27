@@ -26,7 +26,7 @@ final class AuditLogRepository extends ServiceEntityRepository
             ->orderBy('a.occurredAt', 'DESC')
             ->setMaxResults($limit);
 
-        if ($action !== null) {
+        if (null !== $action) {
             $qb->where('a.action = :action')->setParameter('action', $action);
         }
 
@@ -37,6 +37,7 @@ final class AuditLogRepository extends ServiceEntityRepository
      * Returns all audit log entries for a todo list and its items, ordered chronologically.
      *
      * @param int[] $itemIds IDs of TodoItem entities belonging to this list
+     *
      * @return AuditLog[]
      */
     public function findByTodoList(int $todoListId, array $itemIds = []): array

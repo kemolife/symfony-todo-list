@@ -109,12 +109,12 @@ class AuditLogListener
 
     private function buildLog(object $entity, AuditLogAction $action, ?array $changes): AuditLog
     {
-        $entityType = match($entity::class) {
+        $entityType = match ($entity::class) {
             TodoList::class => 'todo_list',
             TodoItem::class => 'todo_item',
         };
 
-        $entityName = match(true) {
+        $entityName = match (true) {
             $entity instanceof TodoList => $entity->getName(),
             $entity instanceof TodoItem => $entity->getTitle(),
         };

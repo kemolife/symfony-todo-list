@@ -87,5 +87,4 @@ final class UserController extends AbstractController
 
         return $this->json(['message' => 'User deleted']);
     }
-
 }
