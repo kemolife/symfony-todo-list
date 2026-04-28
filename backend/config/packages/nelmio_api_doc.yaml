@@ -1,0 +1,22 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Symfony Todo API
+            version: 1.0.0
+            description: |
+                REST API for the Todo application.
+                Supports JWT Bearer auth and API Key auth (X-Api-Key header).
+        components:
+            securitySchemes:
+                bearerAuth:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+                apiKey:
+                    type: apiKey
+                    in: header
+                    name: X-Api-Key
+    areas:
+        default:
+            path_patterns: ['^/api/(?!doc)']
+            name_patterns: ['^api_']
