@@ -7,4 +7,5 @@ resources:
   - postgres/
   - rabbitmq/
   - redis/
+  - mailpit/
   - ingress/

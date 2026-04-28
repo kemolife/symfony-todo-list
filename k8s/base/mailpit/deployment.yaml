@@ -1,38 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
+  name: mailpit
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: frontend
+      app: mailpit
   template:
     metadata:
       labels:
-        app: frontend
+        app: mailpit
     spec:
       containers:
-        - name: frontend
-          image: ghcr.io/OWNER/frontend:latest
+        - name: mailpit
+          image: axllent/mailpit:v1.21
           ports:
-            - containerPort: 80
+            - containerPort: 1025
+            - containerPort: 8025
           livenessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8025
             initialDelaySeconds: 5
             periodSeconds: 15
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8025
             initialDelaySeconds: 3
             periodSeconds: 5
           resources:
             requests:
-              cpu: 64m
-              memory: 64Mi
+              cpu: 32m
+              memory: 32Mi
             limits:
-              cpu: 200m
-              memory: 128Mi
+              cpu: 100m
+              memory: 64Mi

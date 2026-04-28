@@ -158,13 +158,21 @@ k8s/
     aws/         ← EKS + managed services (RDS, ElastiCache, AmazonMQ)
 ```
 
-### Self-hosted (minikube)
+### Self-hosted (Docker Desktop)
+
+Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply.
 
 ```bash
-minikube start && minikube addons enable ingress
+# Install ingress-nginx controller
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
+kubectl wait --namespace ingress-nginx \
+  --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller \
+  --timeout=120s
 
-docker build -t backend:local ./backend && minikube image load backend:local
-docker build -t frontend:local ./frontend && minikube image load frontend:local
+# Build images (imagePullPolicy: Never uses local images directly)
+docker build -t backend:local ./backend
+docker build -t frontend:local ./frontend
 
 kubectl create secret generic backend-secrets \
   --from-literal=DATABASE_URL='postgresql://app:pass@postgres:5432/app' \
@@ -185,7 +193,7 @@ kubectl create secret generic rabbitmq-secrets \
 
 kubectl apply -k k8s/overlays/local
 kubectl exec deploy/backend -- php bin/console doctrine:migrations:migrate --no-interaction
-minikube tunnel  # visit http://localhost
+# visit http://localhost
 ```
 
 ### AWS (EKS)

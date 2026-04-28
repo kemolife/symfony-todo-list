@@ -6,3 +6,4 @@ data:
   APP_ENV: "prod"
   APP_DEBUG: "0"
   CORS_ALLOW_ORIGIN: "^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?$"
+  FRONTEND_URL: "http://192.168.139.2"

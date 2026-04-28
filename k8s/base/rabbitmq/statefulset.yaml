@@ -30,6 +30,8 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-secrets
                   key: RABBITMQ_DEFAULT_PASS
+            - name: RABBITMQ_LOOPBACK_USERS
+              value: ""
           volumeMounts:
             - name: rabbitmq-data
               mountPath: /var/lib/rabbitmq
@@ -40,6 +42,13 @@ spec:
                 - ping
             initialDelaySeconds: 30
             periodSeconds: 15
+          readinessProbe:
+            exec:
+              command:
+                - rabbitmq-diagnostics
+                - check_port_connectivity
+            initialDelaySeconds: 20
+            periodSeconds: 10
           resources:
             requests:
               cpu: 128m
