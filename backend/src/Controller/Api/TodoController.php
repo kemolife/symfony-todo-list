@@ -102,6 +102,7 @@ final class TodoController extends AbstractController
             new OA\Parameter(name: 'status', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['pending', 'in_progress', 'done'])),
             new OA\Parameter(name: 'tag', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
             new OA\Parameter(name: 'search', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'dueDateFilter', in: 'query', required: false, schema: new OA\Schema(type: 'string', enum: ['overdue', 'today', 'this_week'])),
         ],
         responses: [
             new OA\Response(response: 200, description: 'Paginated todo list', content: new OA\JsonContent(ref: new Model(type: PaginatedTodoResponse::class))),
@@ -125,6 +126,7 @@ final class TodoController extends AbstractController
             page: $page,
             limit: $limit,
             owner: $user,
+            dueDateFilter: $request->query->get('dueDateFilter'),
         ));
     }
 

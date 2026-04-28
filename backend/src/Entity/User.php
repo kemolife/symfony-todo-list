@@ -26,6 +26,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     #[ORM\Column(length: 180)]
     private ?string $email = null;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $name = null;
+
     /**
      * @var list<string> The user roles
      */
@@ -66,6 +69,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, TwoFact
     public function getEmail(): ?string
     {
         return $this->email;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(?string $name): static
+    {
+        $this->name = $name;
+
+        return $this;
     }
 
     public function setEmail(string $email): static

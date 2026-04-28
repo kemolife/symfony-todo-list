@@ -3,17 +3,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useTodoFilterStore } from '@/store/todoFilterStore'
-import type { TodoStatus } from '@/types/todo'
+import type { DueDateFilter, TodoStatus } from '@/types/todo'
 import { X, Search } from 'lucide-react'
 
 export function TodoFilters() {
   const { filters, setFilter, clearFilters } = useTodoFilterStore()
   const { data: tags = [] } = useTodoTags()
-  const hasFilters = filters.status !== undefined || filters.tag !== undefined || filters.search !== undefined
+  const hasFilters =
+    filters.status !== undefined ||
+    filters.tag !== undefined ||
+    filters.search !== undefined ||
+    filters.dueDateFilter !== undefined
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="relative flex-1 min-w-[160px] max-w-xs">
+      <div className="relative min-w-[160px] flex-1 max-w-xs">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search todos..."
@@ -34,6 +38,20 @@ export function TodoFilters() {
           <SelectItem value="pending">Pending</SelectItem>
           <SelectItem value="in_progress">In Progress</SelectItem>
           <SelectItem value="done">Done</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.dueDateFilter ?? ''}
+        onValueChange={(v) => setFilter('dueDateFilter', (v as DueDateFilter) || undefined)}
+      >
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder="Any due date" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="today">Due today</SelectItem>
+          <SelectItem value="this_week">This week</SelectItem>
+          <SelectItem value="overdue">Overdue</SelectItem>
         </SelectContent>
       </Select>
 

@@ -24,21 +24,22 @@ final class TodoListRepository extends ServiceEntityRepository
     /**
      * @return TodoList[]
      */
-    public function findFiltered(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10, ?User $owner = null): array
+    public function findFiltered(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10, ?User $owner = null, ?string $dueDateFilter = null): array
     {
-        return $this->buildFilteredQuery($status, $tag, $search, $owner)
+        return $this->buildFilteredQuery($status, $tag, $search, $owner, $dueDateFilter)
             ->leftJoin('t.todoItems', 'ti')
             ->addSelect('ti')
-            ->orderBy('t.createdAt', 'DESC')
+            ->orderBy('t.priority', 'ASC')
+            ->addOrderBy('t.createdAt', 'DESC')
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }
 
-    public function countFiltered(?string $status, ?string $tag, ?string $search, ?User $owner = null): int
+    public function countFiltered(?string $status, ?string $tag, ?string $search, ?User $owner = null, ?string $dueDateFilter = null): int
     {
-        return (int) $this->buildFilteredQuery($status, $tag, $search, $owner)
+        return (int) $this->buildFilteredQuery($status, $tag, $search, $owner, $dueDateFilter)
             ->select('COUNT(t.id)')
             ->getQuery()
             ->getSingleScalarResult();
@@ -108,7 +109,7 @@ final class TodoListRepository extends ServiceEntityRepository
         return $qb;
     }
 
-    private function buildFilteredQuery(?string $status, ?string $tag, ?string $search, ?User $owner = null): QueryBuilder
+    private function buildFilteredQuery(?string $status, ?string $tag, ?string $search, ?User $owner = null, ?string $dueDateFilter = null): QueryBuilder
     {
         $qb = $this->createQueryBuilder('t');
 
@@ -131,6 +132,20 @@ final class TodoListRepository extends ServiceEntityRepository
             $qb->andWhere('t.name LIKE :search OR t.description LIKE :search')
                 ->setParameter('search', '%'.$search.'%');
         }
+
+        $today = new \DateTimeImmutable('today');
+
+        match ($dueDateFilter) {
+            'overdue'   => $qb->andWhere('t.dueDate IS NOT NULL AND t.dueDate < :today AND t.status != :done')
+                              ->setParameter('today', $today)
+                              ->setParameter('done', 'done'),
+            'today'     => $qb->andWhere('t.dueDate = :today')
+                              ->setParameter('today', $today),
+            'this_week' => $qb->andWhere('t.dueDate >= :today AND t.dueDate <= :endOfWeek')
+                              ->setParameter('today', $today)
+                              ->setParameter('endOfWeek', $today->modify('+6 days')),
+            default     => null,
+        };
 
         return $qb;
     }

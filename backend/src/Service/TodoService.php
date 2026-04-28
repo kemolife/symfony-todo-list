@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\DTO\Request\TodoRequest;
+use App\Enum\TodoPriority;
 use App\DTO\Response\AdminTodoResponse;
 use App\DTO\Response\PaginatedTodoResponse;
 use App\DTO\Response\TodoResponse;
@@ -30,18 +31,18 @@ final class TodoService
     ) {
     }
 
-    public function findAll(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10, ?User $owner = null): PaginatedTodoResponse
+    public function findAll(?string $status, ?string $tag, ?string $search, int $page = 1, int $limit = 10, ?User $owner = null, ?string $dueDateFilter = null): PaginatedTodoResponse
     {
-        $cacheKey = sprintf('todos_%s_%s_%s_%s_%s_%s', $owner?->getId(), $status, $tag, $search, $page, $limit);
+        $cacheKey = sprintf('todos_%s_%s_%s_%s_%s_%s_%s', $owner?->getId(), $status, $tag, $search, $page, $limit, $dueDateFilter);
 
-        return $this->cache->get($cacheKey, function (ItemInterface $cacheItem) use ($status, $tag, $search, $page, $limit, $owner) {
+        return $this->cache->get($cacheKey, function (ItemInterface $cacheItem) use ($status, $tag, $search, $page, $limit, $owner, $dueDateFilter) {
             $cacheItem->expiresAfter(3600);
             $cacheItem->tag('todos');
 
-            $total = $this->repository->countFiltered($status, $tag, $search, $owner);
+            $total = $this->repository->countFiltered($status, $tag, $search, $owner, $dueDateFilter);
             $items = array_map(
                 TodoResponse::fromEntity(...),
-                $this->repository->findFiltered($status, $tag, $search, $page, $limit, $owner),
+                $this->repository->findFiltered($status, $tag, $search, $page, $limit, $owner, $dueDateFilter),
             );
 
             return new PaginatedTodoResponse(
@@ -71,6 +72,14 @@ final class TodoService
             $todo->setStatus($dto->status);
         }
 
+        if (null !== $dto->priority) {
+            $todo->setPriority($this->resolvePriority($dto->priority));
+        }
+
+        if (null !== $dto->dueDate) {
+            $todo->setDueDate(new \DateTimeImmutable($dto->dueDate));
+        }
+
         $this->em->persist($todo);
         $this->em->flush();
         $this->cache->invalidateTags(['todos']);
@@ -95,6 +104,12 @@ final class TodoService
                 );
             }
         }
+
+        if (null !== $dto->priority) {
+            $todo->setPriority($this->resolvePriority($dto->priority));
+        }
+
+        $todo->setDueDate(null !== $dto->dueDate ? new \DateTimeImmutable($dto->dueDate) : null);
 
         $this->em->flush();
         $this->cache->invalidateTags(['todos']);
@@ -148,6 +163,15 @@ final class TodoService
     public function getEntity(int $id): TodoList
     {
         return $this->findOrFail($id);
+    }
+
+    private function resolvePriority(string $priority): TodoPriority
+    {
+        return match ($priority) {
+            'high'  => TodoPriority::High,
+            'low'   => TodoPriority::Low,
+            default => TodoPriority::Medium,
+        };
     }
 
     private function findOrFail(int $id): TodoList

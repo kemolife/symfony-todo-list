@@ -1,7 +1,9 @@
 import { Routes, Route } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
+import { AppLayout } from './features/layout/AppLayout'
 import { TodoList } from './features/todos/TodoList'
+import { SettingsPage } from './features/settings/SettingsPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
 import { AdminRegisterPage } from './features/auth/AdminRegisterPage'
@@ -24,14 +26,10 @@ export default function App() {
       <Route path="/2fa/enroll" element={<EnrollPage />} />
 
       <Route element={<ProtectedRoute />}>
-        <Route
-          path="/"
-          element={
-            <div className="mx-auto max-w-2xl px-4 py-8">
-              <TodoList />
-            </div>
-          }
-        />
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<TodoList />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
       </Route>
 
       <Route element={<AdminRoute />}>

@@ -2,18 +2,15 @@ import { useTodos, useImportTodos, type ColumnMap } from '@/api/useTodos'
 import { CsvMapperDialog } from './CsvMapperDialog'
 import { useModalStore } from '@/store/modalStore'
 import { useTodoFilterStore } from '@/store/todoFilterStore'
-import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, ClipboardList, ChevronLeft, ChevronRight, LogOut, Upload, X, KeyRound } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Plus, ClipboardList, ChevronLeft, ChevronRight, Upload, X } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { TodoCard } from './TodoCard'
 import { TodoFilters } from './TodoFilters'
 import { TodoForm } from './TodoForm'
-import { ApiKeyDialog } from './ApiKeyDialog'
-import { useNavigate } from 'react-router-dom'
 
 function TodoSkeleton() {
   return (
@@ -38,9 +35,9 @@ function PaginationControls({ page, pages, onPageChange }: { page: number; pages
     const right = Math.min(pages - 1, page + delta)
 
     range.push(1)
-    if (left > 2) range.push(-1) // left ellipsis
+    if (left > 2) range.push(-1)
     for (let i = left; i <= right; i++) range.push(i)
-    if (right < pages - 1) range.push(-2) // right ellipsis
+    if (right < pages - 1) range.push(-2)
     if (pages > 1) range.push(pages)
 
     return range
@@ -48,13 +45,7 @@ function PaginationControls({ page, pages, onPageChange }: { page: number; pages
 
   return (
     <div className="flex items-center justify-center gap-1 pt-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onPageChange(page - 1)}
-        disabled={page <= 1}
-        className="h-8 w-8 p-0"
-      >
+      <Button variant="outline" size="sm" onClick={() => onPageChange(page - 1)} disabled={page <= 1} className="h-8 w-8 p-0">
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
@@ -62,25 +53,13 @@ function PaginationControls({ page, pages, onPageChange }: { page: number; pages
         p < 0 ? (
           <span key={p + '_' + i} className="px-1 text-muted-foreground">…</span>
         ) : (
-          <Button
-            key={p}
-            variant={p === page ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onPageChange(p)}
-            className="h-8 w-8 p-0"
-          >
+          <Button key={p} variant={p === page ? 'default' : 'outline'} size="sm" onClick={() => onPageChange(p)} className="h-8 w-8 p-0">
             {p}
           </Button>
         ),
       )}
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onPageChange(page + 1)}
-        disabled={page >= pages}
-        className="h-8 w-8 p-0"
-      >
+      <Button variant="outline" size="sm" onClick={() => onPageChange(page + 1)} disabled={page >= pages} className="h-8 w-8 p-0">
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>
@@ -92,21 +71,13 @@ export function TodoList() {
   const setPage = useTodoFilterStore((s) => s.setPage)
   const { data: paginated, isLoading, error } = useTodos(filters)
   const { isCreateOpen, editingTodoId, openCreate, close } = useModalStore()
-  const clearToken = useAuthStore((s) => s.clearToken)
-  const navigate = useNavigate()
   const importTodos = useImportTodos()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importMessage, setImportMessage] = useState<string | null>(null)
   const [importHadErrors, setImportHadErrors] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
-  const [showApiKey, setShowApiKey] = useState(false)
   const dragCounter = useRef(0)
-
-  const handleLogout = () => {
-    clearToken()
-    navigate('/login')
-  }
 
   const triggerImport = ({ file, columnMap }: { file: File; columnMap: ColumnMap }) => {
     setPendingFile(null)
@@ -132,36 +103,23 @@ export function TodoList() {
     setPendingFile(file)
   }
 
-  useEffect(() => {
-    const onDragEnter = (e: DragEvent) => {
-      if (!e.dataTransfer?.types.includes('Files')) return
-      dragCounter.current++
-      setIsDragging(true)
-    }
-    const onDragLeave = () => {
-      dragCounter.current--
-      if (dragCounter.current === 0) setIsDragging(false)
-    }
-    const onDragOver = (e: DragEvent) => e.preventDefault()
-    const onDrop = (e: DragEvent) => {
-      e.preventDefault()
-      dragCounter.current = 0
-      setIsDragging(false)
-      const file = e.dataTransfer?.files[0]
-      if (file) setPendingFile(file)
-    }
-
-    document.addEventListener('dragenter', onDragEnter)
-    document.addEventListener('dragleave', onDragLeave)
-    document.addEventListener('dragover', onDragOver)
-    document.addEventListener('drop', onDrop)
-    return () => {
-      document.removeEventListener('dragenter', onDragEnter)
-      document.removeEventListener('dragleave', onDragLeave)
-      document.removeEventListener('dragover', onDragOver)
-      document.removeEventListener('drop', onDrop)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (!e.dataTransfer?.types.includes('Files')) return
+    dragCounter.current++
+    setIsDragging(true)
+  }
+  const handleDragLeave = () => {
+    dragCounter.current--
+    if (dragCounter.current === 0) setIsDragging(false)
+  }
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault()
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    dragCounter.current = 0
+    setIsDragging(false)
+    const file = e.dataTransfer?.files[0]
+    if (file) setPendingFile(file)
+  }
 
   const todos = paginated?.items
   const page = paginated?.page ?? 1
@@ -169,7 +127,13 @@ export function TodoList() {
   const total = paginated?.total ?? 0
 
   return (
-    <div className="space-y-4">
+    <div
+      className="space-y-4"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -182,31 +146,14 @@ export function TodoList() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleImportChange}
-          />
-          <Button
-            variant="outline"
-            className="gap-2"
-            disabled={importTodos.isPending}
-            onClick={() => fileInputRef.current?.click()}
-          >
+          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportChange} />
+          <Button variant="outline" className="gap-2" disabled={importTodos.isPending} onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4" />
             {importTodos.isPending ? 'Importing…' : 'Import CSV'}
           </Button>
           <Button onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" />
             New todo
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => setShowApiKey(true)} title="API key">
-            <KeyRound className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={handleLogout} title="Sign out">
-            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -220,10 +167,8 @@ export function TodoList() {
         </div>
       )}
 
-      {/* Filters */}
       <TodoFilters />
 
-      {/* Content */}
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
           {(error as Error).message}
@@ -251,41 +196,26 @@ export function TodoList() {
         {todos?.map((todo) => <TodoCard key={todo.id} todo={todo} />)}
       </div>
 
-      {/* Pagination */}
       <PaginationControls page={page} pages={pages} onPageChange={setPage} />
 
-      {/* Create dialog */}
       <Dialog open={isCreateOpen} onOpenChange={(open) => !open && close()}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New todo</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>New todo</DialogTitle></DialogHeader>
           <TodoForm onSuccess={close} />
         </DialogContent>
       </Dialog>
 
-      {/* Edit dialog */}
       <Dialog open={editingTodoId != null} onOpenChange={(open) => !open && close()}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit todo</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Edit todo</DialogTitle></DialogHeader>
           <TodoForm todoId={editingTodoId} onSuccess={close} />
         </DialogContent>
       </Dialog>
 
-      {/* Column mapper dialog */}
       {pendingFile && (
-        <CsvMapperDialog
-          file={pendingFile}
-          onConfirm={triggerImport}
-          onClose={() => setPendingFile(null)}
-        />
+        <CsvMapperDialog file={pendingFile} onConfirm={triggerImport} onClose={() => setPendingFile(null)} />
       )}
 
-      <ApiKeyDialog open={showApiKey} onClose={() => setShowApiKey(false)} />
-
-      {/* Drag & drop overlay */}
       {isDragging && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-primary p-16">

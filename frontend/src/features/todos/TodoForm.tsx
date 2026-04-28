@@ -11,10 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner'
 
 const schema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
+  name:        z.string().min(1, 'Name is required').max(255),
   description: z.string().max(65535).optional(),
-  tag: z.string().max(100).optional(),
-  status: z.enum(['pending', 'in_progress', 'done']).optional(),
+  tag:         z.string().max(100).optional(),
+  status:      z.enum(['pending', 'in_progress', 'done']).optional(),
+  priority:    z.enum(['high', 'medium', 'low']),
+  dueDate:     z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -37,15 +39,17 @@ export function TodoForm({ todoId, onSuccess }: TodoFormProps) {
     watch,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) })
+  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { priority: 'medium' } })
 
   useEffect(() => {
     if (isEdit && existing) {
       reset({
-        name: existing.name,
+        name:        existing.name,
         description: existing.description ?? '',
-        tag: existing.tag ?? '',
-        status: existing.status,
+        tag:         existing.tag ?? '',
+        status:      existing.status,
+        priority:    existing.priority ?? 'medium',
+        dueDate:     existing.dueDate ?? '',
       })
     }
   }, [existing, isEdit, reset])
@@ -53,10 +57,24 @@ export function TodoForm({ todoId, onSuccess }: TodoFormProps) {
   const onSubmit = async (data: FormData) => {
     try {
       if (isEdit && todoId != null) {
-        await updateTodo.mutateAsync({ id: todoId, ...data })
+        await updateTodo.mutateAsync({
+          id: todoId,
+          name: data.name,
+          description: data.description,
+          tag: data.tag,
+          status: data.status,
+          priority: data.priority,
+          dueDate: data.dueDate || null,
+        })
         toast.success('Todo updated')
       } else {
-        await createTodo.mutateAsync(data)
+        await createTodo.mutateAsync({
+          name:        data.name,
+          description: data.description,
+          tag:         data.tag,
+          priority:    data.priority,
+          dueDate:     data.dueDate || undefined,
+        })
         toast.success('Todo created')
       }
       onSuccess()
@@ -83,6 +101,29 @@ export function TodoForm({ todoId, onSuccess }: TodoFormProps) {
         <Label htmlFor="tag">Tag</Label>
         <Input id="tag" {...register('tag')} placeholder="e.g. work, personal, shopping" />
         {errors.tag && <p className="text-sm text-destructive">{errors.tag.message}</p>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>Priority</Label>
+        <Select value={watch('priority') ?? 'medium'} onValueChange={(v) => setValue('priority', v as FormData['priority'])}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select priority">
+              {watch('priority') === 'high' && 'High'}
+              {watch('priority') === 'medium' && 'Medium'}
+              {(watch('priority') === 'low' || !watch('priority')) && 'Low'}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="dueDate">Due date</Label>
+        <Input id="dueDate" type="date" {...register('dueDate')} />
       </div>
 
       {isEdit && (

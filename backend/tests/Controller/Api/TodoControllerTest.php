@@ -21,6 +21,8 @@ final class TodoControllerTest extends WebTestCase
     {
         $this->client = static::createClient();
         $this->em = static::getContainer()->get(EntityManagerInterface::class);
+        // Clear todo cache so DAMA DB rollbacks don't leave stale cache entries
+        static::getContainer()->get('cache.todo')->invalidateTags(['todos']);
     }
 
     private function createUser(string $email = 'user@test.com', string $role = 'ROLE_USER'): User
@@ -288,5 +290,53 @@ final class TodoControllerTest extends WebTestCase
         ]));
 
         self::assertResponseIsSuccessful();
+    }
+
+    public function testCreateTodoDefaultPriorityIsMedium(): void
+    {
+        $user = $this->createUser('priority1@test.com');
+        $this->loginAs($user);
+        $this->client->request('POST', '/api/todos', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode(['name' => 'Priority Test']));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('medium', $data['priority']);
+        self::assertNull($data['dueDate']);
+    }
+
+    public function testCreateTodoWithHighPriorityAndDueDate(): void
+    {
+        $user = $this->createUser('priority2@test.com');
+        $this->loginAs($user);
+        $this->client->request('POST', '/api/todos', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            'name'     => 'Urgent task',
+            'priority' => 'high',
+            'dueDate'  => '2030-12-31',
+        ]));
+
+        self::assertResponseStatusCodeSame(Response::HTTP_CREATED);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertSame('high', $data['priority']);
+        self::assertSame('2030-12-31', $data['dueDate']);
+    }
+
+    public function testTodosOrderedByPriority(): void
+    {
+        $user = $this->createUser('priority3@test.com');
+
+        foreach (['low' => \App\Enum\TodoPriority::Low, 'high' => \App\Enum\TodoPriority::High, 'medium' => \App\Enum\TodoPriority::Medium] as $label => $priority) {
+            $todo = (new TodoList())->setName("$label task")->setPriority($priority)->setOwner($user);
+            $this->em->persist($todo);
+        }
+        $this->em->flush();
+
+        $this->loginAs($user);
+        $this->client->request('GET', '/api/todos');
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+
+        self::assertCount(3, $data['items']);
+        self::assertSame('high',   $data['items'][0]['priority']);
+        self::assertSame('medium', $data['items'][1]['priority']);
+        self::assertSame('low',    $data['items'][2]['priority']);
     }
 }

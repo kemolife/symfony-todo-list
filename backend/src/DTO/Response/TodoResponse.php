@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\DTO\Response;
 
 use App\Entity\TodoList;
+use App\Enum\TodoPriority;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema]
@@ -24,6 +25,10 @@ final readonly class TodoResponse
         public ?string $tag,
         #[OA\Property(type: 'string', enum: ['pending', 'in_progress', 'done'], example: 'pending')]
         public string $status,
+        #[OA\Property(type: 'string', enum: ['high', 'medium', 'low'], example: 'medium')]
+        public string $priority,
+        #[OA\Property(type: 'string', format: 'date', nullable: true, example: '2026-05-15')]
+        public ?string $dueDate,
         #[OA\Property(type: 'array', items: new OA\Items(ref: '#/components/schemas/TodoItemResponse'))]
         public array $items,
         #[OA\Property(type: 'string', format: 'date-time', example: '2024-01-15T10:30:00+00:00')]
@@ -41,6 +46,12 @@ final readonly class TodoResponse
             description: $todo->getDescription(),
             tag: $todo->getTag(),
             status: $todo->getStatus()->value,
+            priority: match ($todo->getPriority()) {
+                TodoPriority::High   => 'high',
+                TodoPriority::Medium => 'medium',
+                TodoPriority::Low    => 'low',
+            },
+            dueDate: $todo->getDueDate()?->format('Y-m-d'),
             items: array_map(TodoItemResponse::fromEntity(...), $todo->getTodoItems()->toArray()),
             createdAt: $todo->getCreatedAt()->format(\DateTimeInterface::ATOM),
             updatedAt: $todo->getUpdatedAt()->format(\DateTimeInterface::ATOM),

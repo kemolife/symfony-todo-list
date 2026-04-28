@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\DTO\Response;
 
 use App\Entity\TodoList;
+use App\Enum\TodoPriority;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema]
@@ -21,6 +22,10 @@ final readonly class AdminTodoResponse
         public ?string $tag,
         #[OA\Property(type: 'string', enum: ['pending', 'in_progress', 'done'], example: 'pending')]
         public string $status,
+        #[OA\Property(type: 'string', enum: ['high', 'medium', 'low'], example: 'medium')]
+        public string $priority,
+        #[OA\Property(type: 'string', format: 'date', nullable: true, example: '2026-05-15')]
+        public ?string $dueDate,
         #[OA\Property(type: 'integer', nullable: true, example: 5)]
         public ?int $ownerId,
         #[OA\Property(type: 'string', nullable: true, format: 'email', example: 'user@example.com')]
@@ -42,6 +47,12 @@ final readonly class AdminTodoResponse
             description: $todo->getDescription(),
             tag: $todo->getTag(),
             status: $todo->getStatus()->value,
+            priority: match ($todo->getPriority()) {
+                TodoPriority::High   => 'high',
+                TodoPriority::Medium => 'medium',
+                TodoPriority::Low    => 'low',
+            },
+            dueDate: $todo->getDueDate()?->format('Y-m-d'),
             ownerId: $todo->getOwner()?->getId(),
             ownerEmail: $todo->getOwner()?->getEmail(),
             createdAt: $todo->getCreatedAt()->format(\DateTimeInterface::ATOM),

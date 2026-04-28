@@ -16,6 +16,8 @@ export const mockTodo: Todo = {
   description: 'A description',
   tag: 'work',
   status: 'pending',
+  priority: 'medium',
+  dueDate: null,
   items: [mockTodoItem],
   createdAt: '2026-04-04T00:00:00+00:00',
   updatedAt: '2026-04-04T00:00:00+00:00',
@@ -27,6 +29,8 @@ export const mockDoneTodo: Todo = {
   description: null,
   tag: null,
   status: 'done',
+  priority: 'medium',
+  dueDate: null,
   items: [],
   createdAt: '2026-04-04T00:00:00+00:00',
   updatedAt: '2026-04-04T00:00:00+00:00',
@@ -45,7 +49,13 @@ export const mockApiKey: ApiKeyEntry = {
 
 export const handlers = [
   http.get('http://localhost:8080/api/profile', () =>
-    HttpResponse.json({ apiKeyCount: 1 }),
+    HttpResponse.json({ id: 1, email: 'test@example.com', name: null, apiKeyCount: 1, roles: ['ROLE_USER'] }),
+  ),
+  http.patch('http://localhost:8080/api/profile', () =>
+    HttpResponse.json({ id: 1, email: 'test@example.com', name: 'Test User', apiKeyCount: 1, roles: ['ROLE_USER'] }),
+  ),
+  http.patch('http://localhost:8080/api/profile/password', () =>
+    new HttpResponse(null, { status: 204 }),
   ),
   http.get('http://localhost:8080/api/profile/api-keys', () =>
     HttpResponse.json([mockApiKey]),

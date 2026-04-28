@@ -2,8 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/axios'
 import type { ApiKeyEntry, CreateApiKeyData } from '../types/apiKey'
 
-interface Profile {
+export interface ProfileData {
+  id: number
+  email: string
+  name: string | null
   apiKeyCount: number
+  roles: string[]
 }
 
 const PROFILE_KEY = ['profile'] as const
@@ -13,8 +17,8 @@ const ADMIN_API_KEYS_KEY = ['admin-api-keys'] as const
 export function useProfile() {
   return useQuery({
     queryKey: PROFILE_KEY,
-    queryFn: async (): Promise<Profile> => {
-      const { data } = await api.get<Profile>('/api/profile')
+    queryFn: async (): Promise<ProfileData> => {
+      const { data } = await api.get<ProfileData>('/api/profile')
       return data
     },
   })
@@ -76,6 +80,25 @@ export function useAdminRevokeApiKey() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ADMIN_API_KEYS_KEY })
+    },
+  })
+}
+
+export function useUpdateProfile() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: { name: string | null }): Promise<ProfileData> => {
+      const { data } = await api.patch<ProfileData>('/api/profile', payload)
+      return data
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: PROFILE_KEY }),
+  })
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (payload: { currentPassword: string; newPassword: string }): Promise<void> => {
+      await api.patch('/api/profile/password', payload)
     },
   })
 }

@@ -12,6 +12,7 @@ export function useTodos(filters: TodoFilters = {}) {
       if (filters.status) params['status'] = filters.status
       if (filters.tag) params['tag'] = filters.tag
       if (filters.search) params['search'] = filters.search
+      if (filters.dueDateFilter) params['dueDateFilter'] = filters.dueDateFilter
       if (filters.page) params['page'] = String(filters.page)
       if (filters.limit) params['limit'] = String(filters.limit)
 

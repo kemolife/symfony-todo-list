@@ -1,4 +1,6 @@
-export type TodoStatus = 'pending' | 'in_progress' | 'done'
+export type TodoStatus   = 'pending' | 'in_progress' | 'done'
+export type TodoPriority = 'high' | 'medium' | 'low'
+export type DueDateFilter = 'overdue' | 'today' | 'this_week'
 
 export interface TodoItem {
   id: number
@@ -25,6 +27,8 @@ export interface Todo {
   description: string | null
   tag: string | null
   status: TodoStatus
+  priority: TodoPriority
+  dueDate: string | null
   items: TodoItem[]
   createdAt: string
   updatedAt: string
@@ -34,6 +38,7 @@ export interface TodoFilters {
   status?: TodoStatus
   tag?: string
   search?: string
+  dueDateFilter?: DueDateFilter
   page?: number
   limit?: number
 }
@@ -50,6 +55,8 @@ export interface CreateTodoInput {
   name: string
   description?: string
   tag?: string
+  priority?: TodoPriority
+  dueDate?: string
 }
 
 export interface UpdateTodoInput {
@@ -57,4 +64,6 @@ export interface UpdateTodoInput {
   description?: string
   tag?: string
   status?: TodoStatus
+  priority?: TodoPriority
+  dueDate?: string | null
 }

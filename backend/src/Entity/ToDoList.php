@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\TodoPriority;
 use App\Enum\TodoStatus;
 use App\Repository\TodoListRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -33,6 +34,12 @@ class TodoList
 
     #[ORM\Column(enumType: TodoStatus::class)]
     private TodoStatus $status = TodoStatus::Pending;
+
+    #[ORM\Column(enumType: TodoPriority::class, options: ['default' => 2])]
+    private TodoPriority $priority = TodoPriority::Medium;
+
+    #[ORM\Column(type: 'date_immutable', nullable: true)]
+    private ?\DateTimeImmutable $dueDate = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
@@ -114,6 +121,30 @@ class TodoList
     public function setStatus(TodoStatus $status): static
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getPriority(): TodoPriority
+    {
+        return $this->priority;
+    }
+
+    public function setPriority(TodoPriority $priority): static
+    {
+        $this->priority = $priority;
+
+        return $this;
+    }
+
+    public function getDueDate(): ?\DateTimeImmutable
+    {
+        return $this->dueDate;
+    }
+
+    public function setDueDate(?\DateTimeImmutable $dueDate): static
+    {
+        $this->dueDate = $dueDate;
 
         return $this;
     }

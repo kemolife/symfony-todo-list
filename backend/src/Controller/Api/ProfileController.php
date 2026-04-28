@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\DTO\Request\ChangePasswordRequest;
 use App\DTO\Request\CreateApiKeyRequest;
+use App\DTO\Request\UpdateProfileRequest;
 use App\DTO\Response\ApiKeyResponse;
 use App\Entity\ApiKey;
 use App\Entity\User;
 use App\Enum\ApiKeyPermission;
 use App\Enum\UserRole;
 use App\Service\ApiKeyService;
+use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -25,16 +29,25 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted(UserRole::User->value)]
 final class ProfileController extends AbstractController
 {
-    public function __construct(private readonly ApiKeyService $apiKeyService)
-    {
+    public function __construct(
+        private readonly ApiKeyService $apiKeyService,
+        private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly EntityManagerInterface $em,
+    ) {
     }
 
     #[OA\Get(
-        summary: 'Get own profile summary',
+        summary: 'Get own profile',
         security: [['bearerAuth' => []], ['apiKey' => []]],
         responses: [
             new OA\Response(response: 200, description: 'Profile info', content: new OA\JsonContent(
-                properties: [new OA\Property(property: 'apiKeyCount', type: 'integer', example: 2)]
+                properties: [
+                    new OA\Property(property: 'id', type: 'integer'),
+                    new OA\Property(property: 'email', type: 'string'),
+                    new OA\Property(property: 'name', type: 'string', nullable: true),
+                    new OA\Property(property: 'apiKeyCount', type: 'integer'),
+                    new OA\Property(property: 'roles', type: 'array', items: new OA\Items(type: 'string')),
+                ]
             )),
             new OA\Response(response: 401, description: 'Unauthorized'),
         ]
@@ -45,7 +58,62 @@ final class ProfileController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        return $this->json(['apiKeyCount' => $user->getApiKeys()->count()]);
+        return $this->json([
+            'id'          => $user->getId(),
+            'email'       => $user->getEmail(),
+            'name'        => $user->getName(),
+            'apiKeyCount' => $user->getApiKeys()->count(),
+            'roles'       => $user->getRoles(),
+        ]);
+    }
+
+    #[OA\Patch(
+        summary: 'Update profile name',
+        security: [['bearerAuth' => []]],
+        responses: [
+            new OA\Response(response: 200, description: 'Updated profile'),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 422, description: 'Validation error'),
+        ]
+    )]
+    #[Route('', name: '_update', methods: ['PATCH'])]
+    public function updateProfile(#[MapRequestPayload] UpdateProfileRequest $dto): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $user->setName($dto->name);
+        $this->em->flush();
+
+        return $this->json([
+            'id'    => $user->getId(),
+            'email' => $user->getEmail(),
+            'name'  => $user->getName(),
+        ]);
+    }
+
+    #[OA\Patch(
+        summary: 'Change password',
+        security: [['bearerAuth' => []]],
+        responses: [
+            new OA\Response(response: 204, description: 'Password changed'),
+            new OA\Response(response: 401, description: 'Unauthorized'),
+            new OA\Response(response: 422, description: 'Wrong current password or validation error'),
+        ]
+    )]
+    #[Route('/password', name: '_change_password', methods: ['PATCH'])]
+    public function changePassword(#[MapRequestPayload] ChangePasswordRequest $dto): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$this->passwordHasher->isPasswordValid($user, $dto->currentPassword)) {
+            return $this->json(['error' => 'Current password is incorrect.'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $user->setPassword($this->passwordHasher->hashPassword($user, $dto->newPassword));
+        $this->em->flush();
+
+        return $this->json(null, Response::HTTP_NO_CONTENT);
     }
 
     #[OA\Get(

@@ -26,4 +26,12 @@ final class TodoRequest
 
     #[OA\Property(type: 'string', enum: ['pending', 'in_progress', 'done'], nullable: true, example: 'pending')]
     public ?TodoStatus $status = null;
+
+    #[OA\Property(type: 'string', enum: ['high', 'medium', 'low'], nullable: true, example: 'medium')]
+    #[Assert\Choice(choices: ['high', 'medium', 'low'])]
+    public ?string $priority = null;
+
+    #[OA\Property(type: 'string', format: 'date', nullable: true, example: '2026-05-15')]
+    #[Assert\Date]
+    public ?string $dueDate = null;
 }
