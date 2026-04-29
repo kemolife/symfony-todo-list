@@ -45,3 +45,9 @@ variable "multi_az" {
   type        = bool
   default     = false
 }
+
+variable "deletion_protection" {
+  description = "Prevent accidental deletion of the RDS instance"
+  type        = bool
+  default     = true
+}
