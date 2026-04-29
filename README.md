@@ -262,29 +262,43 @@ kubectl exec deploy/backend -- php bin/console doctrine:migrations:migrate --no-
 # 1. Provision infrastructure
 cd terraform/environments/aws
 cp terraform.tfvars.example terraform.tfvars  # fill in your values
-terraform init \
-  -backend-config="bucket=your-tf-state-bucket" \
-  -backend-config="key=symfony-app/terraform.tfstate" \
-  -backend-config="region=eu-west-1"
+cp backend.hcl.example backend.hcl            # fill in your S3 bucket name
+terraform init -backend-config=backend.hcl
 terraform apply
 
-# 2. Patch external service endpoints
-terraform output rds_endpoint      # → k8s/overlays/aws/patches/external-services.yaml
-terraform output redis_endpoint
-terraform output rabbitmq_endpoint
+# 2. Patch RDS + Redis endpoints into kustomization
+RDS=$(terraform output -raw rds_endpoint)
+REDIS=$(terraform output -raw redis_endpoint)
+sed -i "s|REPLACE_WITH_RDS_ENDPOINT|$RDS|g" k8s/overlays/aws/kustomization.yaml
+sed -i "s|REPLACE_WITH_ELASTICACHE_ENDPOINT|$REDIS|g" k8s/overlays/aws/kustomization.yaml
 
 # 3. Configure kubectl
-aws eks update-kubeconfig --name symfony-app --region eu-west-1
+aws eks update-kubeconfig --name symfony-app --region eu-central-1
 
-# 4. Build and push images
-echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
-docker build -t ghcr.io/USERNAME/backend:latest ./backend
-docker build -t ghcr.io/USERNAME/frontend:latest ./frontend \
+# 4. Create backend-secrets (include SQS queue URL as MESSENGER_TRANSPORT_DSN)
+kubectl create secret generic backend-secrets \
+  --from-literal=DATABASE_URL="postgresql://app:PASSWORD@$RDS:5432/app?serverVersion=16&charset=utf8" \
+  --from-literal=MESSENGER_TRANSPORT_DSN="$(terraform output -raw sqs_queue_url)" \
+  --from-literal=APP_SECRET='your-secret' \
+  --from-literal=JWT_PASSPHRASE='your-passphrase' \
+  --from-literal=REDIS_URL="redis://$REDIS" \
+  --from-literal=MAILER_DSN='smtp://mailpit:1025' \
+  --from-literal=ADMIN_SECRET='your-admin-secret'
+
+# 5. Build and push images to ECR
+BACKEND_ECR=$(terraform output -raw ecr_backend_url)
+FRONTEND_ECR=$(terraform output -raw ecr_frontend_url)
+
+aws ecr get-login-password --region eu-central-1 | \
+  docker login --username AWS --password-stdin 891376934023.dkr.ecr.eu-central-1.amazonaws.com
+
+docker build -t $BACKEND_ECR:latest ./backend
+docker build -t $FRONTEND_ECR:latest ./frontend \
   --build-arg VITE_API_URL=https://your-domain.com/api
-docker push ghcr.io/USERNAME/backend:latest
-docker push ghcr.io/USERNAME/frontend:latest
+docker push $BACKEND_ECR:latest
+docker push $FRONTEND_ECR:latest
 
-# 5. Deploy
+# 6. Deploy
 kubectl apply -k k8s/overlays/aws
 kubectl exec deploy/backend -- php bin/console doctrine:migrations:migrate --no-interaction
 ```

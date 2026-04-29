@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/OWNER/frontend:latest
+          image: ghcr.io/owner/frontend:latest
           ports:
             - containerPort: 80
           livenessProbe:

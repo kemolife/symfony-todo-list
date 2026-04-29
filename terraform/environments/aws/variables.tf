@@ -1,6 +1,7 @@
 variable "aws_region" {
-  type    = string
-  default = "eu-west-1"
+  description = "AWS region to deploy resources into"
+  type        = string
+  default     = "eu-west-1"
 }
 
 variable "name" {
@@ -10,28 +11,24 @@ variable "name" {
 }
 
 variable "azs" {
-  type    = list(string)
-  default = ["eu-west-1a", "eu-west-1b"]
+  description = "Availability zones for subnet distribution"
+  type        = list(string)
+  default     = ["eu-west-1a", "eu-west-1b"]
 }
 
 variable "db_name" {
-  type = string
+  description = "Name of the PostgreSQL database to create"
+  type        = string
 }
 
 variable "db_username" {
-  type = string
+  description = "Master username for the PostgreSQL database"
+  type        = string
 }
 
 variable "db_password" {
-  type      = string
-  sensitive = true
+  description = "Master password for the PostgreSQL database"
+  type        = string
+  sensitive   = true
 }
 
-variable "mq_username" {
-  type = string
-}
-
-variable "mq_password" {
-  type      = string
-  sensitive = true
-}

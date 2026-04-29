@@ -1,7 +1,9 @@
 output "endpoint" {
-  value = aws_elasticache_cluster.this.cache_nodes[0].address
+  description = "Redis node hostname, for use as Kubernetes ExternalName"
+  value       = aws_elasticache_cluster.this.cache_nodes[0].address
 }
 
 output "port" {
-  value = aws_elasticache_cluster.this.cache_nodes[0].port
+  description = "Redis port"
+  value       = aws_elasticache_cluster.this.cache_nodes[0].port
 }

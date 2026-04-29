@@ -1,20 +1,25 @@
 variable "name" {
-  type = string
+  description = "Name prefix for ElastiCache resources"
+  type        = string
 }
 
 variable "subnet_ids" {
-  type = list(string)
+  description = "Private subnet IDs for the ElastiCache subnet group"
+  type        = list(string)
 }
 
 variable "vpc_id" {
-  type = string
+  description = "VPC ID where the ElastiCache cluster is deployed"
+  type        = string
 }
 
 variable "allowed_security_group_id" {
-  type = string
+  description = "Security group ID allowed to connect on port 6379"
+  type        = string
 }
 
 variable "node_type" {
-  type    = string
-  default = "cache.t3.micro"
+  description = "ElastiCache node type"
+  type        = string
+  default     = "cache.t3.micro"
 }

@@ -1,13 +1,16 @@
 variable "name" {
-  type = string
+  description = "Name prefix for RDS resources"
+  type        = string
 }
 
 variable "subnet_ids" {
-  type = list(string)
+  description = "Private subnet IDs for the RDS subnet group"
+  type        = list(string)
 }
 
 variable "vpc_id" {
-  type = string
+  description = "VPC ID where the RDS instance is deployed"
+  type        = string
 }
 
 variable "allowed_security_group_id" {
@@ -16,24 +19,29 @@ variable "allowed_security_group_id" {
 }
 
 variable "db_name" {
-  type = string
+  description = "Name of the database to create"
+  type        = string
 }
 
 variable "db_username" {
-  type = string
+  description = "Master username for the database"
+  type        = string
 }
 
 variable "db_password" {
-  type      = string
-  sensitive = true
+  description = "Master password for the database"
+  type        = string
+  sensitive   = true
 }
 
 variable "instance_class" {
-  type    = string
-  default = "db.t3.micro"
+  description = "RDS instance class"
+  type        = string
+  default     = "db.t3.micro"
 }
 
 variable "multi_az" {
-  type    = bool
-  default = false
+  description = "Enable Multi-AZ deployment for high availability"
+  type        = bool
+  default     = false
 }

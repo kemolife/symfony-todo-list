@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: messenger
-          image: ghcr.io/OWNER/backend:latest
+          image: ghcr.io/owner/backend:latest
           command:
             - php
             - bin/console

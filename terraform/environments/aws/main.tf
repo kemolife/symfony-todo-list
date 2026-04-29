@@ -30,12 +30,9 @@ module "elasticache" {
   allowed_security_group_id = module.eks.node_security_group_id
 }
 
-module "mq" {
-  source                    = "../../modules/mq"
-  name                      = "${var.name}-mq"
-  vpc_id                    = module.vpc.vpc_id
-  subnet_ids                = module.vpc.private_subnet_ids
-  allowed_security_group_id = module.eks.node_security_group_id
-  mq_username               = var.mq_username
-  mq_password               = var.mq_password
+module "sqs" {
+  source            = "../../modules/sqs"
+  name              = "${var.name}-async"
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.oidc_provider_url
 }

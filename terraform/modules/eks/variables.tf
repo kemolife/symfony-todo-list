@@ -10,7 +10,8 @@ variable "kubernetes_version" {
 }
 
 variable "vpc_id" {
-  type = string
+  description = "VPC ID where the cluster is deployed"
+  type        = string
 }
 
 variable "subnet_ids" {
@@ -19,21 +20,25 @@ variable "subnet_ids" {
 }
 
 variable "node_instance_type" {
-  type    = string
-  default = "t3.medium"
+  description = "EC2 instance type for worker nodes"
+  type        = string
+  default     = "t3.medium"
 }
 
 variable "node_desired" {
-  type    = number
-  default = 2
+  description = "Desired number of worker nodes"
+  type        = number
+  default     = 2
 }
 
 variable "node_min" {
-  type    = number
-  default = 1
+  description = "Minimum number of worker nodes"
+  type        = number
+  default     = 1
 }
 
 variable "node_max" {
-  type    = number
-  default = 5
+  description = "Maximum number of worker nodes"
+  type        = number
+  default     = 5
 }

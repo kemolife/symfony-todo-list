@@ -1,3 +1,25 @@
 .idea
 .vscode
 .editorconfig
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+*.tfvars
+backend.hcl
+
+# PHP / Symfony
+backend/vendor/
+backend/var/
+backend/*.db
+backend/.env.local
+backend/.env.*.local
+backend/config/jwt/*.pem
+backend/config/jwt/test/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local

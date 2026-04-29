@@ -280,7 +280,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
           {/* Usage hint */}
           <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground space-y-1">
             <p className="font-medium text-foreground">Usage</p>
-            <code className="block">X-Api-Key: {'<your-key>'}</code>
+            <code className="block text-foreground">X-Api-Key: {'<your-key>'}</code>
             <p>Rate limited to 1 000 req / hour.</p>
           </div>
         </div>

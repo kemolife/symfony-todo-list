@@ -1,0 +1,7 @@
+framework:
+    cache:
+        prefix_seed: "todo_list_test_tests"
+        app: cache.adapter.filesystem
+        pools:
+            cache.todo:
+                adapter: cache.adapter.filesystem

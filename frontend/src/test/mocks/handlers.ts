@@ -2,6 +2,8 @@ import { http, HttpResponse } from 'msw'
 import type { Todo, TodoItem } from '../../types/todo'
 import type { ApiKeyEntry } from '../../types/apiKey'
 
+export const mockUserToken = `eyJhbGciOiJIUzI1NiJ9.${btoa(JSON.stringify({ roles: ['ROLE_USER'], twoFactorConfirmed: false, username: 'test@example.com' }))}.sig`
+
 export const mockTodoItem: TodoItem = {
   id: 1,
   title: 'Test item',
@@ -48,6 +50,12 @@ export const mockApiKey: ApiKeyEntry = {
 }
 
 export const handlers = [
+  http.post('http://localhost:8080/api/auth/login', () =>
+    HttpResponse.json({ token: mockUserToken }),
+  ),
+  http.post('http://localhost:8080/api/auth/register', () =>
+    HttpResponse.json({ token: mockUserToken }),
+  ),
   http.get('http://localhost:8080/api/profile', () =>
     HttpResponse.json({ id: 1, email: 'test@example.com', name: null, apiKeyCount: 1, roles: ['ROLE_USER'] }),
   ),

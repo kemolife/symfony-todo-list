@@ -4,10 +4,10 @@ resources:
   - ../../base
 
 images:
-  - name: ghcr.io/OWNER/backend:latest
+  - name: ghcr.io/owner/backend:latest
     newName: backend
     newTag: local
-  - name: ghcr.io/OWNER/frontend:latest
+  - name: ghcr.io/owner/frontend:latest
     newName: frontend
     newTag: local
 

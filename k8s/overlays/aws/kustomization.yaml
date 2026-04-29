@@ -2,6 +2,14 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base
+  - backend-service-account.yaml
+images:
+  - name: ghcr.io/owner/backend
+    newName: REPLACE_WITH_BACKEND_ECR
+    newTag: latest
+  - name: ghcr.io/owner/frontend
+    newName: REPLACE_WITH_FRONTEND_ECR
+    newTag: latest
 patches:
   # Remove in-cluster workloads (managed services replace them)
   - path: patches/remove-postgres-statefulset.yaml
@@ -35,15 +43,18 @@ patches:
         value: REPLACE_WITH_ELASTICACHE_ENDPOINT
       - op: remove
         path: /spec/selector
+  # Attach IRSA ServiceAccount to backend and messenger (grants SQS access)
   - target:
-      kind: Service
-      name: rabbitmq
+      kind: Deployment
+      name: backend
     patch: |
-      - op: replace
-        path: /spec/type
-        value: ExternalName
       - op: add
-        path: /spec/externalName
-        value: REPLACE_WITH_AMAZONMQ_ENDPOINT
-      - op: remove
-        path: /spec/selector
+        path: /spec/template/spec/serviceAccountName
+        value: backend
+  - target:
+      kind: Deployment
+      name: messenger
+    patch: |
+      - op: add
+        path: /spec/template/spec/serviceAccountName
+        value: backend
