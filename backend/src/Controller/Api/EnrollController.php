@@ -5,16 +5,13 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\DTO\Request\ConfirmEnrollmentRequest;
-use App\Repository\UserRepository;
-use App\Service\UserService;
+use App\Service\TwoFactorEnrollmentService;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Scheb\TwoFactorBundle\Security\TwoFactor\Provider\Totp\TotpAuthenticatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[OA\Tag(name: '2FA Enrollment')]
@@ -22,9 +19,8 @@ use Symfony\Component\Routing\Attribute\Route;
 final class EnrollController extends AbstractController
 {
     public function __construct(
-        private readonly UserRepository $userRepository,
+        private readonly TwoFactorEnrollmentService $enrollmentService,
         private readonly TotpAuthenticatorInterface $totpAuthenticator,
-        private readonly UserService $userService,
     ) {
     }
 
@@ -46,7 +42,7 @@ final class EnrollController extends AbstractController
     #[Route('/{token}', name: '_show', methods: ['GET'])]
     public function show(string $token): JsonResponse
     {
-        $user = $this->findValidUser($token);
+        $user = $this->enrollmentService->findByToken($token);
 
         return $this->json([
             'totp_uri' => $this->totpAuthenticator->getQRContent($user),
@@ -69,25 +65,9 @@ final class EnrollController extends AbstractController
     #[Route('/{token}', name: '_confirm', methods: ['POST'])]
     public function confirm(string $token, #[MapRequestPayload] ConfirmEnrollmentRequest $request): JsonResponse
     {
-        $user = $this->findValidUser($token);
-
-        if (!$this->totpAuthenticator->checkCode($user, $request->code)) {
-            return $this->json(['error' => 'Invalid verification code'], Response::HTTP_BAD_REQUEST);
-        }
-
-        $this->userService->confirmEnrollment($user);
+        $user = $this->enrollmentService->findByToken($token);
+        $this->enrollmentService->confirm($user, $request->code);
 
         return $this->json(['message' => '2FA enrollment confirmed']);
-    }
-
-    private function findValidUser(string $token): \App\Entity\User
-    {
-        $user = $this->userRepository->findOneBy(['enrollmentToken' => $token]);
-
-        if (null === $user || $user->getEnrollmentTokenExpiresAt() < new \DateTimeImmutable()) {
-            throw new NotFoundHttpException('Enrollment link not found or expired');
-        }
-
-        return $user;
     }
 }

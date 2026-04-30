@@ -23,6 +23,7 @@ final class TodoItemService
         private readonly TodoItemRepository $todoItemRepository,
         private readonly EntityManagerInterface $em,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly ListCompletionPolicy $completionPolicy,
         #[Autowire(service: 'cache.todo')]
         private readonly TagAwareCacheInterface $cache,
     ) {
@@ -84,8 +85,10 @@ final class TodoItemService
         if (null !== $dto->isCompleted) {
             $item->setIsCompleted($dto->isCompleted);
             if (true === $dto->isCompleted) {
+                $this->completionPolicy->handleItemCompleted($item);
                 $this->eventDispatcher->dispatch(new TodoItemCompletedEvent($item));
             } else {
+                $this->completionPolicy->handleItemUncompleted($item);
                 $this->eventDispatcher->dispatch(new TodoItemUncompletedEvent($item));
             }
         }

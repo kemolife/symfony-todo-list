@@ -2,9 +2,9 @@
 
 namespace App\MessageHandler;
 
-use App\Enum\TodoStatus;
 use App\Message\MarkListItemsCompleteMessage;
 use App\Repository\TodoListRepository;
+use App\Service\ListCompletionPolicy;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 
@@ -14,6 +14,7 @@ final class MarkListItemsCompleteHandler
     public function __construct(
         private readonly TodoListRepository $todoListRepository,
         private readonly EntityManagerInterface $em,
+        private readonly ListCompletionPolicy $completionPolicy,
     ) {
     }
 
@@ -23,16 +24,8 @@ final class MarkListItemsCompleteHandler
         if (null === $list) {
             return;
         }
-        if (TodoStatus::Done !== $list->getStatus()) {
-            return;
-        }
 
-        $items = $list->getTodoItems();
-
-        foreach ($items as $item) {
-            $item->setIsCompleted(true);
-        }
-
+        $this->completionPolicy->cascadeItemCompletion($list);
         $this->em->flush();
     }
 }

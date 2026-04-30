@@ -6,12 +6,13 @@ namespace App\Controller\Api;
 
 use App\DTO\Request\TodoItemRequest;
 use App\DTO\Response\TodoItemResponse;
+use App\Entity\TodoList;
 use App\Enum\UserRole;
 use App\Security\TodoVoter;
 use App\Service\TodoItemService;
-use App\Service\TodoService;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,10 +27,10 @@ final class TodoItemController extends AbstractController
 {
     public function __construct(
         private readonly TodoItemService $todoItemService,
-        private readonly TodoService $todoService,
     ) {
     }
 
+    #[IsGranted(TodoVoter::READ, subject: 'todo')]
     #[OA\Get(
         summary: 'List items of a todo list',
         security: [['bearerAuth' => []], ['apiKey' => []]],
@@ -44,14 +45,12 @@ final class TodoItemController extends AbstractController
         ]
     )]
     #[Route('', name: '_list', methods: ['GET'])]
-    public function list(int $id): JsonResponse
+    public function list(#[MapEntity(id: 'id')] TodoList $todo): JsonResponse
     {
-        $todo = $this->todoService->getEntity($id);
-        $this->denyAccessUnlessGranted(TodoVoter::READ, $todo);
-
-        return $this->json($this->todoItemService->findAllByTodoListId($id));
+        return $this->json($this->todoItemService->findAllByTodoListId($todo->getId()));
     }
 
+    #[IsGranted(TodoVoter::EDIT, subject: 'todo')]
     #[OA\Post(
         summary: 'Add item to a todo list',
         security: [['bearerAuth' => []], ['apiKey' => []]],
@@ -68,14 +67,12 @@ final class TodoItemController extends AbstractController
         ]
     )]
     #[Route('', name: '_create', methods: ['POST'])]
-    public function create(int $id, #[MapRequestPayload(validationGroups: ['create'])] TodoItemRequest $dto): JsonResponse
+    public function create(#[MapEntity(id: 'id')] TodoList $todo, #[MapRequestPayload(validationGroups: ['create'])] TodoItemRequest $dto): JsonResponse
     {
-        $todo = $this->todoService->getEntity($id);
-        $this->denyAccessUnlessGranted(TodoVoter::EDIT, $todo);
-
         return $this->json($this->todoItemService->create($todo, $dto), Response::HTTP_CREATED);
     }
 
+    #[IsGranted(TodoVoter::EDIT, subject: 'todo')]
     #[OA\Patch(
         summary: 'Update a todo item (toggle completion, reorder)',
         security: [['bearerAuth' => []], ['apiKey' => []]],
@@ -92,14 +89,12 @@ final class TodoItemController extends AbstractController
         ]
     )]
     #[Route('/{itemId}', name: '_update', methods: ['PATCH'])]
-    public function update(int $id, int $itemId, #[MapRequestPayload] TodoItemRequest $dto): JsonResponse
+    public function update(#[MapEntity(id: 'id')] TodoList $todo, int $itemId, #[MapRequestPayload] TodoItemRequest $dto): JsonResponse
     {
-        $todo = $this->todoService->getEntity($id);
-        $this->denyAccessUnlessGranted(TodoVoter::EDIT, $todo);
-
-        return $this->json($this->todoItemService->update($itemId, $id, $dto));
+        return $this->json($this->todoItemService->update($itemId, $todo->getId(), $dto));
     }
 
+    #[IsGranted(TodoVoter::EDIT, subject: 'todo')]
     #[OA\Delete(
         summary: 'Delete a todo item',
         security: [['bearerAuth' => []], ['apiKey' => []]],
@@ -115,12 +110,9 @@ final class TodoItemController extends AbstractController
         ]
     )]
     #[Route('/{itemId}', name: '_delete', methods: ['DELETE'])]
-    public function delete(int $id, int $itemId): Response
+    public function delete(#[MapEntity(id: 'id')] TodoList $todo, int $itemId): Response
     {
-        $todo = $this->todoService->getEntity($id);
-        $this->denyAccessUnlessGranted(TodoVoter::EDIT, $todo);
-
-        $this->todoItemService->delete($itemId, $id);
+        $this->todoItemService->delete($itemId, $todo->getId());
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }

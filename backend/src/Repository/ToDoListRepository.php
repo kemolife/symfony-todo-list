@@ -99,11 +99,7 @@ final class TodoListRepository extends ServiceEntityRepository
         if ($includeDeleted) {
             $qb->andWhere('t.deletedAt IS NOT NULL');
         } else {
-            $resolvedStatus = null !== $status ? TodoStatus::tryFrom($status) : null;
-            if (null !== $resolvedStatus) {
-                $qb->andWhere('t.status = :status')
-                    ->setParameter('status', $status);
-            }
+            $this->applyStatusFilter($qb, $status);
         }
 
         return $qb;
@@ -118,10 +114,7 @@ final class TodoListRepository extends ServiceEntityRepository
                 ->setParameter('owner', $owner);
         }
 
-        $resolvedStatus = null !== $status ? TodoStatus::tryFrom($status) : null;
-        if (null !== $resolvedStatus) {
-            $qb->andWhere('t.status = :status')->setParameter('status', $status);
-        }
+        $this->applyStatusFilter($qb, $status);
 
         if (null !== $tag && '' !== $tag) {
             $qb->andWhere('t.tag = :tag')
@@ -138,7 +131,7 @@ final class TodoListRepository extends ServiceEntityRepository
         match ($dueDateFilter) {
             'overdue'   => $qb->andWhere('t.dueDate IS NOT NULL AND t.dueDate < :today AND t.status != :done')
                               ->setParameter('today', $today)
-                              ->setParameter('done', 'done'),
+                              ->setParameter('done', TodoStatus::Done),
             'today'     => $qb->andWhere('t.dueDate = :today')
                               ->setParameter('today', $today),
             'this_week' => $qb->andWhere('t.dueDate >= :today AND t.dueDate <= :endOfWeek')
@@ -148,5 +141,13 @@ final class TodoListRepository extends ServiceEntityRepository
         };
 
         return $qb;
+    }
+
+    private function applyStatusFilter(QueryBuilder $qb, ?string $status): void
+    {
+        $resolved = null !== $status ? TodoStatus::tryFrom($status) : null;
+        if (null !== $resolved) {
+            $qb->andWhere('t.status = :status')->setParameter('status', $resolved);
+        }
     }
 }

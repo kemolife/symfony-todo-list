@@ -40,14 +40,18 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString(undefined, { dateStyle: 'medium' })
 }
 
+type KeyDialogState =
+  | { mode: 'list' }
+  | { mode: 'create' }
+  | { mode: 'created'; key: ApiKeyEntry }
+  | { mode: 'revoking'; keyId: number }
+
 export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: keys = [], isLoading } = useApiKeys()
   const createKey = useCreateApiKey()
   const revokeKey = useRevokeApiKey()
 
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [justCreatedKey, setJustCreatedKey] = useState<ApiKeyEntry | null>(null)
-  const [revokeTarget, setRevokeTarget] = useState<number | null>(null)
+  const [inner, setInner] = useState<KeyDialogState>({ mode: 'list' })
 
   const {
     register,
@@ -63,8 +67,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
   const handleCreate = async (data: CreateKeyForm) => {
     try {
       const result = await createKey.mutateAsync(data)
-      setJustCreatedKey(result)
-      setShowCreateForm(false)
+      setInner({ mode: 'created', key: result })
       reset()
       toast.success('API key created')
     } catch {
@@ -75,8 +78,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
   const handleRevoke = async (id: number) => {
     try {
       await revokeKey.mutateAsync(id)
-      setRevokeTarget(null)
-      if (justCreatedKey?.id === id) setJustCreatedKey(null)
+      setInner({ mode: 'list' })
       toast.success('API key revoked')
     } catch {
       toast.error('Failed to revoke API key')
@@ -84,9 +86,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
   }
 
   const handleClose = () => {
-    setShowCreateForm(false)
-    setJustCreatedKey(null)
-    setRevokeTarget(null)
+    setInner({ mode: 'list' })
     reset()
     onClose()
   }
@@ -97,8 +97,8 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
         <DialogHeader>
           <div className="flex items-center justify-between pr-6">
             <DialogTitle>API Keys</DialogTitle>
-            {!showCreateForm && (
-              <Button size="sm" onClick={() => setShowCreateForm(true)}>
+            {inner.mode !== 'create' && (
+              <Button size="sm" onClick={() => setInner({ mode: 'create' })}>
                 <Plus className="mr-1.5 h-3.5 w-3.5" />
                 New Key
               </Button>
@@ -108,7 +108,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
 
         <div className="space-y-4 py-1">
           {/* Create form */}
-          {showCreateForm && (
+          {inner.mode === 'create' && (
             <form onSubmit={handleSubmit(handleCreate)} className="rounded-lg border p-4 space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="key-name">Name</Label>
@@ -170,10 +170,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    setShowCreateForm(false)
-                    reset()
-                  }}
+                  onClick={() => { setInner({ mode: 'list' }); reset() }}
                 >
                   Cancel
                 </Button>
@@ -182,7 +179,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
           )}
 
           {/* New key banner */}
-          {justCreatedKey?.keyValue && (
+          {inner.mode === 'created' && inner.key.keyValue && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2 dark:border-amber-900 dark:bg-amber-950/30">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
@@ -192,12 +189,12 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"
-                  onClick={() => setJustCreatedKey(null)}
+                  onClick={() => setInner({ mode: 'list' })}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <CopyableKey value={justCreatedKey.keyValue} />
+              <CopyableKey value={inner.key.keyValue} />
             </div>
           )}
 
@@ -239,7 +236,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
                     </div>
 
                     <div className="shrink-0">
-                      {revokeTarget === key.id ? (
+                      {inner.mode === 'revoking' && inner.keyId === key.id ? (
                         <div className="flex items-center gap-1.5">
                           <Button
                             size="sm"
@@ -254,7 +251,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
                             size="sm"
                             variant="outline"
                             className="h-7 text-xs"
-                            onClick={() => setRevokeTarget(null)}
+                            onClick={() => setInner({ mode: 'list' })}
                           >
                             Cancel
                           </Button>
@@ -264,7 +261,7 @@ export function ApiKeyDialog({ open, onClose }: { open: boolean; onClose: () => 
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => setRevokeTarget(key.id)}
+                          onClick={() => setInner({ mode: 'revoking', keyId: key.id })}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                           <span className="sr-only">Revoke</span>

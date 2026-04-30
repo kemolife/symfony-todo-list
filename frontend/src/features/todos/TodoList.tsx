@@ -1,5 +1,6 @@
-import { useTodos, useImportTodos, type ColumnMap } from '@/api/useTodos'
+import { useTodos } from '@/api/useTodos'
 import { CsvMapperDialog } from './CsvMapperDialog'
+import { useCsvImport } from './useCsvImport'
 import { useModalStore } from '@/store/modalStore'
 import { useTodoFilterStore } from '@/store/todoFilterStore'
 import { Button } from '@/components/ui/button'
@@ -7,7 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Plus, ClipboardList, ChevronLeft, ChevronRight, Upload, X } from 'lucide-react'
-import { useRef, useState } from 'react'
 import { TodoCard } from './TodoCard'
 import { TodoFilters } from './TodoFilters'
 import { TodoForm } from './TodoForm'
@@ -70,56 +70,8 @@ export function TodoList() {
   const filters = useTodoFilterStore((s) => s.filters)
   const setPage = useTodoFilterStore((s) => s.setPage)
   const { data: paginated, isLoading, error } = useTodos(filters)
-  const { isCreateOpen, editingTodoId, openCreate, close } = useModalStore()
-  const importTodos = useImportTodos()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [importMessage, setImportMessage] = useState<string | null>(null)
-  const [importHadErrors, setImportHadErrors] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-  const [pendingFile, setPendingFile] = useState<File | null>(null)
-  const dragCounter = useRef(0)
-
-  const triggerImport = ({ file, columnMap }: { file: File; columnMap: ColumnMap }) => {
-    setPendingFile(null)
-    importTodos.mutate({ file, columnMap }, {
-      onSuccess: (result) => {
-        const parts = [`Imported ${result.created} todo(s).`]
-        if (result.failed > 0) parts.push(`${result.failed} row(s) failed.`)
-        if (result.errors.length > 0) parts.push(result.errors.join(' '))
-        setImportHadErrors(result.failed > 0)
-        setImportMessage(parts.join(' '))
-      },
-      onError: () => {
-        setImportHadErrors(true)
-        setImportMessage('Import failed')
-      },
-    })
-  }
-
-  const handleImportChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    setPendingFile(file)
-  }
-
-  const handleDragEnter = (e: React.DragEvent) => {
-    if (!e.dataTransfer?.types.includes('Files')) return
-    dragCounter.current++
-    setIsDragging(true)
-  }
-  const handleDragLeave = () => {
-    dragCounter.current--
-    if (dragCounter.current === 0) setIsDragging(false)
-  }
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault()
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    dragCounter.current = 0
-    setIsDragging(false)
-    const file = e.dataTransfer?.files[0]
-    if (file) setPendingFile(file)
-  }
+  const { modal, openCreate, close } = useModalStore()
+  const csvImport = useCsvImport()
 
   const todos = paginated?.items
   const page = paginated?.page ?? 1
@@ -129,12 +81,8 @@ export function TodoList() {
   return (
     <div
       className="space-y-4"
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      {...csvImport.dragHandlers}
     >
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ClipboardList className="h-6 w-6 text-primary" />
@@ -146,10 +94,16 @@ export function TodoList() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImportChange} />
-          <Button variant="outline" className="gap-2" disabled={importTodos.isPending} onClick={() => fileInputRef.current?.click()}>
+          <input
+            ref={csvImport.fileInputProps.ref}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={csvImport.fileInputProps.onChange}
+          />
+          <Button variant="outline" className="gap-2" disabled={csvImport.isPending} onClick={csvImport.triggerFileInput}>
             <Upload className="h-4 w-4" />
-            {importTodos.isPending ? 'Importing…' : 'Import CSV'}
+            {csvImport.isPending ? 'Importing…' : 'Import CSV'}
           </Button>
           <Button onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -160,10 +114,12 @@ export function TodoList() {
 
       <Separator />
 
-      {importMessage && (
-        <div className={`flex items-start justify-between gap-2 rounded-lg border p-3 text-sm ${importHadErrors ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-green-200 bg-green-50 text-green-800'}`}>
-          <span>{importMessage}</span>
-          <button onClick={() => setImportMessage(null)} className="shrink-0 opacity-60 hover:opacity-100"><X className="h-3.5 w-3.5" /></button>
+      {csvImport.message && (
+        <div className={`flex items-start justify-between gap-2 rounded-lg border p-3 text-sm ${csvImport.hadErrors ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-green-200 bg-green-50 text-green-800'}`}>
+          <span>{csvImport.message}</span>
+          <button onClick={csvImport.clearMessage} className="shrink-0 opacity-60 hover:opacity-100">
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
 
@@ -198,25 +154,29 @@ export function TodoList() {
 
       <PaginationControls page={page} pages={pages} onPageChange={setPage} />
 
-      <Dialog open={isCreateOpen} onOpenChange={(open) => !open && close()}>
+      <Dialog open={modal.mode === 'create'} onOpenChange={(open) => !open && close()}>
         <DialogContent>
           <DialogHeader><DialogTitle>New todo</DialogTitle></DialogHeader>
           <TodoForm onSuccess={close} />
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editingTodoId != null} onOpenChange={(open) => !open && close()}>
+      <Dialog open={modal.mode === 'edit'} onOpenChange={(open) => !open && close()}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit todo</DialogTitle></DialogHeader>
-          <TodoForm todoId={editingTodoId} onSuccess={close} />
+          <TodoForm todoId={modal.mode === 'edit' ? modal.id : null} onSuccess={close} />
         </DialogContent>
       </Dialog>
 
-      {pendingFile && (
-        <CsvMapperDialog file={pendingFile} onConfirm={triggerImport} onClose={() => setPendingFile(null)} />
+      {csvImport.pendingFile && (
+        <CsvMapperDialog
+          file={csvImport.pendingFile}
+          onConfirm={csvImport.confirm}
+          onClose={csvImport.dismissPending}
+        />
       )}
 
-      {isDragging && (
+      {csvImport.isDragging && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-primary p-16">
             <Upload className="h-12 w-12 text-primary" />

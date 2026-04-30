@@ -57,10 +57,9 @@ export function useUpdateUser() {
     },
     onSuccess: (updatedUser) => {
       qc.invalidateQueries({ queryKey: USERS_KEY })
-      const { email, clearToken } = useAuthStore.getState()
+      const { email, logout } = useAuthStore.getState()
       if (updatedUser.email === email && !updatedUser.roles.includes('ROLE_ADMIN')) {
-        clearToken()
-        window.location.href = '/login'
+        logout()
       }
     },
   })

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Papa from 'papaparse'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import type { ColumnMap } from '@/api/useTodos'
@@ -23,32 +24,15 @@ interface Props {
 }
 
 function parseCsvPreview(file: File): Promise<CsvPreview> {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = (e.target?.result as string) ?? ''
-      const lines = text.split('\n').filter(Boolean).slice(0, 4)
-
-      const parseRow = (line: string): string[] => {
-        const result: string[] = []
-        let current = ''
-        let inQuotes = false
-        for (const char of line) {
-          if (char === '"') { inQuotes = !inQuotes }
-          else if (char === ',' && !inQuotes) { result.push(current.trim()); current = '' }
-          else { current += char }
-        }
-        result.push(current.trim())
-        return result
-      }
-
-      const [headerLine, ...sampleLines] = lines
-      resolve({
-        headers: parseRow(headerLine ?? ''),
-        samples: sampleLines.map(parseRow),
-      })
-    }
-    reader.readAsText(file)
+  return new Promise((resolve, reject) => {
+    Papa.parse<string[]>(file, {
+      preview: 4,
+      complete: ({ data }) => {
+        const [headers = [], ...sampleRows] = data
+        resolve({ headers, samples: sampleRows })
+      },
+      error: reject,
+    })
   })
 }
 

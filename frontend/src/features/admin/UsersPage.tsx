@@ -299,18 +299,23 @@ function DeleteUserDialog({ user, onClose }: { user: User | null; onClose: () =>
   )
 }
 
+type DialogState =
+  | { mode: 'idle' }
+  | { mode: 'create' }
+  | { mode: 'edit'; user: User }
+  | { mode: 'delete'; user: User }
+  | { mode: 'keys'; user: User }
+
 export function UsersPage() {
   const { data: users, isLoading, isError } = useUsers()
-  const [showCreate, setShowCreate] = useState(false)
-  const [editUser, setEditUser] = useState<User | null>(null)
-  const [deleteUser, setDeleteUser] = useState<User | null>(null)
-  const [managingKeysUser, setManagingKeysUser] = useState<User | null>(null)
+  const [dialog, setDialog] = useState<DialogState>({ mode: 'idle' })
+  const closeDialog = () => setDialog({ mode: 'idle' })
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Users</h2>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
+        <Button size="sm" onClick={() => setDialog({ mode: 'create' })}>
           <Plus className="mr-1.5 h-4 w-4" />
           Add user
         </Button>
@@ -391,7 +396,7 @@ export function UsersPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => setEditUser(user)}
+                      onClick={() => setDialog({ mode: 'edit', user })}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                       <span className="sr-only">Edit</span>
@@ -400,7 +405,7 @@ export function UsersPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-muted-foreground"
-                      onClick={() => setManagingKeysUser(user)}
+                      onClick={() => setDialog({ mode: 'keys', user })}
                       title="Manage API keys"
                     >
                       <KeyRound className="h-3.5 w-3.5" />
@@ -410,7 +415,7 @@ export function UsersPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => setDeleteUser(user)}
+                      onClick={() => setDialog({ mode: 'delete', user })}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       <span className="sr-only">Delete</span>
@@ -423,13 +428,13 @@ export function UsersPage() {
         </table>
       </div>
 
-      <CreateUserDialog open={showCreate} onClose={() => setShowCreate(false)} />
-      <EditUserDialog user={editUser} onClose={() => setEditUser(null)} />
-      <DeleteUserDialog user={deleteUser} onClose={() => setDeleteUser(null)} />
+      <CreateUserDialog open={dialog.mode === 'create'} onClose={closeDialog} />
+      <EditUserDialog user={dialog.mode === 'edit' ? dialog.user : null} onClose={closeDialog} />
+      <DeleteUserDialog user={dialog.mode === 'delete' ? dialog.user : null} onClose={closeDialog} />
       <UserApiKeysDialog
-        userId={managingKeysUser?.id ?? null}
-        userEmail={managingKeysUser?.email ?? null}
-        onClose={() => setManagingKeysUser(null)}
+        userId={dialog.mode === 'keys' ? dialog.user.id : null}
+        userEmail={dialog.mode === 'keys' ? dialog.user.email : null}
+        onClose={closeDialog}
       />
     </div>
   )

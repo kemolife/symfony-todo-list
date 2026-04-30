@@ -21,53 +21,34 @@ final class UserService
         private readonly UserRepository $userRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly TotpAuthenticatorInterface $totpAuthenticator,
-        private readonly EnrollmentMailer $enrollmentMailer,
+        private readonly TwoFactorEnrollmentService $enrollmentService,
     ) {
     }
 
-    public function create(RegisterRequest $registerRequest): User
+    public function create(RegisterRequest $dto): User
     {
-        if (null !== $this->userRepository->findOneBy(['email' => $registerRequest->email])) {
-            throw new ConflictHttpException('Email already taken');
-        }
-
-        $user = new User();
-        $user->setEmail($registerRequest->email);
-        $user->setPassword($this->passwordHasher->hashPassword($user, $registerRequest->password));
-
+        $this->assertEmailUnique($dto->email);
+        $user = $this->buildUser($dto->email, $dto->password);
         $this->userRepository->save($user);
 
         return $user;
     }
 
-    public function createAdmin(CreateAdminRequest $createAdminRequest): User
+    public function createAdmin(CreateAdminRequest $dto): User
     {
-        if (null !== $this->userRepository->findOneBy(['email' => $createAdminRequest->email])) {
-            throw new ConflictHttpException('Email already taken');
-        }
-
-        $user = new User();
-        $user->setEmail($createAdminRequest->email);
-        $user->setPassword($this->passwordHasher->hashPassword($user, $createAdminRequest->password));
-        $user->setRoles([UserRole::Admin->value]);
+        $this->assertEmailUnique($dto->email);
+        $user = $this->buildUser($dto->email, $dto->password, [UserRole::Admin->value]);
         $user->setTopSecret($this->totpAuthenticator->generateSecret());
         $user->setTwoFactorConfirmed(true);
-
         $this->userRepository->save($user);
 
         return $user;
     }
 
-    public function createByAdmin(CreateUserRequest $request): User
+    public function createByAdmin(CreateUserRequest $dto): User
     {
-        if (null !== $this->userRepository->findOneBy(['email' => $request->email])) {
-            throw new ConflictHttpException('Email already taken');
-        }
-
-        $user = new User();
-        $user->setEmail($request->email);
-        $user->setPassword($this->passwordHasher->hashPassword($user, $request->password));
-
+        $this->assertEmailUnique($dto->email);
+        $user = $this->buildUser($dto->email, $dto->password);
         $this->userRepository->save($user);
 
         return $user;
@@ -123,41 +104,41 @@ final class UserService
         }
     }
 
+    private function assertEmailUnique(string $email): void
+    {
+        if (null !== $this->userRepository->findOneBy(['email' => $email])) {
+            throw new ConflictHttpException('Email already taken');
+        }
+    }
+
+    private function buildUser(string $email, string $password, array $roles = []): User
+    {
+        $user = new User();
+        $user->setEmail($email);
+        $user->setPassword($this->passwordHasher->hashPassword($user, $password));
+
+        if ([] !== $roles) {
+            $user->setRoles($roles);
+        }
+
+        return $user;
+    }
+
     private function promoteToAdmin(User $user): void
     {
         $user->setRoles([UserRole::Admin->value]);
-        $user->setTopSecret($user->getTopSecret() ?? $this->totpAuthenticator->generateSecret());
-        $user->setTwoFactorConfirmed(false);
-
-        $token = bin2hex(random_bytes(32));
-        $user->setEnrollmentToken($token);
-        $user->setEnrollmentTokenExpiresAt(new \DateTimeImmutable('+24 hours'));
-
-        $this->userRepository->save($user);
-        $this->enrollmentMailer->send($user);
+        $this->enrollmentService->initiate($user);
     }
 
     private function demoteToUser(User $user): void
     {
         $user->setRoles([]);
-        $user->setTopSecret(null);
-        $user->setTwoFactorConfirmed(false);
-        $user->setEnrollmentToken(null);
-        $user->setEnrollmentTokenExpiresAt(null);
-        $this->userRepository->save($user);
+        $this->enrollmentService->revoke($user);
     }
 
     public function confirmTwoFactor(User $user): void
     {
         $user->setTwoFactorConfirmed(true);
-        $this->userRepository->save($user);
-    }
-
-    public function confirmEnrollment(User $user): void
-    {
-        $user->setTwoFactorConfirmed(true);
-        $user->setEnrollmentToken(null);
-        $user->setEnrollmentTokenExpiresAt(null);
         $this->userRepository->save($user);
     }
 

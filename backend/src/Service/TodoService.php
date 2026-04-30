@@ -5,27 +5,25 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\DTO\Request\TodoRequest;
-use App\Enum\TodoPriority;
 use App\DTO\Response\AdminTodoResponse;
 use App\DTO\Response\PaginatedTodoResponse;
 use App\DTO\Response\TodoResponse;
 use App\Entity\TodoList;
 use App\Entity\User;
-use App\Event\TodoListStatusChangedEvent;
+use App\Enum\TodoPriority;
 use App\Repository\TodoListRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 final class TodoService
 {
     public function __construct(
         private readonly TodoListRepository $repository,
         private readonly EntityManagerInterface $em,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly ListCompletionPolicy $completionPolicy,
         #[Autowire(service: 'cache.todo')]
         private readonly TagAwareCacheInterface $cache,
     ) {
@@ -96,13 +94,7 @@ final class TodoService
             ->setTag($dto->tag);
 
         if (null !== $dto->status) {
-            $previousStatus = $todo->getStatus();
-            $todo->setStatus($dto->status);
-            if ($previousStatus !== $dto->status) {
-                $this->eventDispatcher->dispatch(
-                    new TodoListStatusChangedEvent($todo, $previousStatus)
-                );
-            }
+            $this->completionPolicy->setListStatus($todo, $dto->status);
         }
 
         if (null !== $dto->priority) {
@@ -129,21 +121,17 @@ final class TodoService
     {
         $includeDeleted = 'deleted' === $status;
 
-        if ($includeDeleted) {
-            $this->em->getFilters()->disable('softdeleteable');
-        }
+        $query = function () use ($userId, $status, $page, $limit, $includeDeleted): array {
+            return [
+                $this->repository->countAllAdmin($userId, $status, $includeDeleted),
+                array_map(
+                    AdminTodoResponse::fromEntity(...),
+                    $this->repository->findAllAdmin($userId, $status, $page, $limit, $includeDeleted),
+                ),
+            ];
+        };
 
-        try {
-            $total = $this->repository->countAllAdmin($userId, $status, $includeDeleted);
-            $items = array_map(
-                AdminTodoResponse::fromEntity(...),
-                $this->repository->findAllAdmin($userId, $status, $page, $limit, $includeDeleted),
-            );
-        } finally {
-            if ($includeDeleted) {
-                $this->em->getFilters()->enable('softdeleteable');
-            }
-        }
+        [$total, $items] = $includeDeleted ? $this->withSoftDeleted($query) : $query();
 
         return new PaginatedTodoResponse(
             items: $items,
@@ -160,9 +148,14 @@ final class TodoService
         return $this->repository->findAllTags($owner);
     }
 
-    public function getEntity(int $id): TodoList
+    private function withSoftDeleted(callable $fn): mixed
     {
-        return $this->findOrFail($id);
+        $this->em->getFilters()->disable('softdeleteable');
+        try {
+            return $fn();
+        } finally {
+            $this->em->getFilters()->enable('softdeleteable');
+        }
     }
 
     private function resolvePriority(string $priority): TodoPriority

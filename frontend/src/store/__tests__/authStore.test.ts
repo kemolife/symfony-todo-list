@@ -64,4 +64,21 @@ describe('authStore', () => {
     useAuthStore.getState().setPreAuthToken('pre-token-123')
     expect(useAuthStore.getState().preAuthToken).toBe('pre-token-123')
   })
+
+  it('setToken clears auth state on malformed token', () => {
+    useAuthStore.getState().setToken('not.a.valid.jwt')
+    const state = useAuthStore.getState()
+    expect(state.isAuthenticated).toBe(false)
+    expect(state.token).toBeNull()
+    expect(state.roles).toEqual([])
+  })
+
+  it('logout clears auth state', () => {
+    const token = makeToken({ roles: ['ROLE_USER'], twoFactorConfirmed: false, username: 'user@example.com' })
+    useAuthStore.getState().setToken(token)
+    expect(useAuthStore.getState().isAuthenticated).toBe(true)
+    useAuthStore.getState().logout()
+    expect(useAuthStore.getState().isAuthenticated).toBe(false)
+    expect(useAuthStore.getState().token).toBeNull()
+  })
 })

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\EventSubscriber;
+namespace App\Tests\Service;
 
 use App\Entity\TodoItem;
 use App\Entity\TodoList;
@@ -13,7 +13,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
 
-final class TodoCompletionSubscriberTest extends WebTestCase
+final class ListCompletionPolicyTest extends WebTestCase
 {
     private EntityManagerInterface $em;
     private KernelBrowser $client;

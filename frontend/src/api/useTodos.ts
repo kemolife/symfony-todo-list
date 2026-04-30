@@ -44,79 +44,72 @@ export function useTodoTags() {
   })
 }
 
-export function useCreateTodo() {
+function useInvalidateTodos() {
   const qc = useQueryClient()
+  return () => qc.invalidateQueries({ queryKey: [TODOS_KEY] })
+}
+
+export function useCreateTodo() {
+  const invalidateTodos = useInvalidateTodos()
   return useMutation({
     mutationFn: async (input: CreateTodoInput) => {
       const { data } = await api.post<Todo>('/api/todos', input)
       return data
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
-    },
+    onSuccess: () => { void invalidateTodos() },
   })
 }
 
 export function useUpdateTodo() {
-  const qc = useQueryClient()
+  const invalidateTodos = useInvalidateTodos()
   return useMutation({
     mutationFn: async ({ id, ...input }: { id: number } & UpdateTodoInput) => {
       const { data } = await api.put<Todo>(`/api/todos/${id}`, input)
       return data
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
-    },
+    onSuccess: () => { void invalidateTodos() },
   })
 }
 
 export function useDeleteTodo() {
-  const qc = useQueryClient()
+  const invalidateTodos = useInvalidateTodos()
   return useMutation({
     mutationFn: async (id: number) => {
       await api.delete(`/api/todos/${id}`)
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
-    },
+    onSuccess: () => { void invalidateTodos() },
   })
 }
 
 export function useCreateTodoItem() {
-  const qc = useQueryClient()
+  const invalidateTodos = useInvalidateTodos()
   return useMutation({
     mutationFn: async ({ todoId, ...input }: { todoId: number } & CreateTodoItemInput) => {
       const { data } = await api.post<TodoItem>(`/api/todos/${todoId}/items`, input)
       return data
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
-    },
+    onSuccess: () => { void invalidateTodos() },
   })
 }
 
 export function useToggleTodoItem() {
-  const qc = useQueryClient()
+  const invalidateTodos = useInvalidateTodos()
   return useMutation({
     mutationFn: async ({ todoId, itemId, ...input }: { todoId: number; itemId: number } & UpdateTodoItemInput) => {
       const { data } = await api.patch<TodoItem>(`/api/todos/${todoId}/items/${itemId}`, input)
       return data
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
-    },
+    onSuccess: () => { void invalidateTodos() },
   })
 }
 
 export function useDeleteTodoItem() {
-  const qc = useQueryClient()
+  const invalidateTodos = useInvalidateTodos()
   return useMutation({
     mutationFn: async ({ todoId, itemId }: { todoId: number; itemId: number }) => {
       await api.delete(`/api/todos/${todoId}/items/${itemId}`)
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
-    },
+    onSuccess: () => { void invalidateTodos() },
   })
 }
 
@@ -135,7 +128,7 @@ export interface ColumnMap {
 }
 
 export function useImportTodos() {
-  const qc = useQueryClient()
+  const invalidateTodos = useInvalidateTodos()
   return useMutation({
     mutationFn: async ({ file, columnMap }: { file: File; columnMap: ColumnMap }) => {
       const form = new FormData()
@@ -146,8 +139,6 @@ export function useImportTodos() {
       })
       return data
     },
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: [TODOS_KEY] })
-    },
+    onSuccess: () => { void invalidateTodos() },
   })
 }

@@ -19,8 +19,7 @@ api.interceptors.response.use(
   (error: unknown) => {
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401 || error.response?.status === 403) {
-        useAuthStore.getState().clearToken()
-        window.location.href = '/login'
+        useAuthStore.getState().logout()
       }
       const message = (error.response?.data as { error?: string } | undefined)?.error
         ?? error.message

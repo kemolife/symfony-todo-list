@@ -36,12 +36,7 @@ final class AuditLogService
     /** @return AuditLogResponse[] */
     public function findByTodoListId(int $todoListId): array
     {
-        $this->em->getFilters()->disable('softdeleteable');
-        try {
-            $todo = $this->todoListRepo->find($todoListId);
-        } finally {
-            $this->em->getFilters()->enable('softdeleteable');
-        }
+        $todo = $this->withSoftDeleted(fn () => $this->todoListRepo->find($todoListId));
 
         if (!$todo) {
             throw new NotFoundHttpException("Todo #$todoListId not found");
@@ -56,5 +51,15 @@ final class AuditLogService
             AuditLogResponse::fromEntity(...),
             $this->auditRepo->findByTodoList($todoListId, $itemIds),
         );
+    }
+
+    private function withSoftDeleted(callable $fn): mixed
+    {
+        $this->em->getFilters()->disable('softdeleteable');
+        try {
+            return $fn();
+        } finally {
+            $this->em->getFilters()->enable('softdeleteable');
+        }
     }
 }

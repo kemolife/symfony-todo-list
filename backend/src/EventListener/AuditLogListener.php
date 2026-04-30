@@ -62,20 +62,17 @@ class AuditLogListener
             return;
         }
 
-        $changeset = [];
+        $rawChangeset = [];
         foreach (self::TRACKED_FIELDS[$entity::class] as $field) {
-            if (!$args->hasChangedField($field)) {
-                continue;
+            if ($args->hasChangedField($field)) {
+                $rawChangeset[$field] = [
+                    'from' => $args->getOldValue($field),
+                    'to'   => $args->getNewValue($field),
+                ];
             }
-            $from = $args->getOldValue($field);
-            $to = $args->getNewValue($field);
-            $changeset[] = [
-                'field' => $field,
-                'from' => $from instanceof \BackedEnum ? $from->value : $from,
-                'to' => $to instanceof \BackedEnum ? $to->value : $to,
-            ];
         }
 
+        $changeset = $this->buildChangeset($entity::class, $rawChangeset);
         if (!empty($changeset)) {
             $this->pendingLogs[] = $this->buildLog($entity, AuditLogAction::Updated, $changeset);
         }
@@ -105,6 +102,24 @@ class AuditLogListener
             $em->persist($log);
         }
         $em->flush();
+    }
+
+    private function buildChangeset(string $entityClass, array $rawChangeset): array
+    {
+        $result = [];
+        foreach (self::TRACKED_FIELDS[$entityClass] as $field) {
+            if (!array_key_exists($field, $rawChangeset)) {
+                continue;
+            }
+            ['from' => $from, 'to' => $to] = $rawChangeset[$field];
+            $result[] = [
+                'field' => $field,
+                'from'  => $from instanceof \BackedEnum ? $from->value : $from,
+                'to'    => $to instanceof \BackedEnum ? $to->value : $to,
+            ];
+        }
+
+        return $result;
     }
 
     private function buildLog(object $entity, AuditLogAction $action, ?array $changes): AuditLog

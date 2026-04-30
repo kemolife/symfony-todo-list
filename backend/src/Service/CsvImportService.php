@@ -42,53 +42,64 @@ final class CsvImportService
         );
 
         $ownerId = $user->getId();
-        $ownerRef = $this->em->getReference(User::class, $ownerId);
         $batch = 0;
         $created = 0;
         $failed = 0;
         $errors = [];
 
-        foreach ($csv->getRecords($renamedHeaders) as $i => $record) {
-            $dto = TodoImportDto::fromRecord($record);
-            $violations = $this->validator->validate($dto);
+        $conn = $this->em->getConnection();
+        $conn->beginTransaction();
+        try {
+            $ownerRef = $this->em->getReference(User::class, $ownerId);
 
-            if (count($violations) > 0) {
-                ++$failed;
-                foreach ($violations as $violation) {
-                    $errors[] = sprintf('Row %d (%s): %s', $i + 1, $violation->getPropertyPath(), $violation->getMessage());
+            foreach ($csv->getRecords($renamedHeaders) as $i => $record) {
+                $dto = TodoImportDto::fromRecord($record);
+                $violations = $this->validator->validate($dto);
+
+                if (count($violations) > 0) {
+                    ++$failed;
+                    foreach ($violations as $violation) {
+                        $errors[] = sprintf('Row %d (%s): %s', $i + 1, $violation->getPropertyPath(), $violation->getMessage());
+                    }
+                    continue;
                 }
-                continue;
+
+                $todoList = (new TodoList())
+                    ->setName($dto->title)
+                    ->setDescription($dto->description ?: null)
+                    ->setTag($dto->tag ?: null)
+                    ->setStatus(TodoStatus::tryFrom($dto->status ?? '') ?? TodoStatus::Pending)
+                    ->setOwner($ownerRef);
+
+                foreach ($dto->getItemTitles() as $position => $title) {
+                    $todoList->addTodoItem(
+                        (new TodoItem())
+                            ->setTitle($title)
+                            ->setPosition($position)
+                            ->setIsCompleted(false),
+                    );
+                }
+
+                $this->em->persist($todoList);
+                ++$created;
+
+                ++$batch;
+                if (0 === $batch % self::BATCH_SIZE) {
+                    $this->em->flush();
+                    $this->em->clear();
+                    $ownerRef = $this->em->getReference(User::class, $ownerId);
+                }
             }
 
-            $todoList = (new TodoList())
-                ->setName($dto->title)
-                ->setDescription($dto->description ?: null)
-                ->setTag($dto->tag ?: null)
-                ->setStatus(TodoStatus::tryFrom($dto->status ?? '') ?? TodoStatus::Pending)
-                ->setOwner($ownerRef);
-
-            foreach ($dto->getItemTitles() as $position => $title) {
-                $todoList->addTodoItem(
-                    (new TodoItem())
-                        ->setTitle($title)
-                        ->setPosition($position)
-                        ->setIsCompleted(false),
-                );
+            $this->em->flush();
+            $this->em->clear();
+            $conn->commit();
+        } catch (\Throwable $e) {
+            if ($conn->isTransactionActive()) {
+                $conn->rollBack();
             }
-
-            $this->em->persist($todoList);
-            ++$created;
-
-            ++$batch;
-            if (0 === $batch % self::BATCH_SIZE) {
-                $this->em->flush();
-                $this->em->clear();
-                $ownerRef = $this->em->getReference(User::class, $ownerId);
-            }
+            throw $e;
         }
-
-        $this->em->flush();
-        $this->em->clear();
 
         return new ImportResult($created, $failed, $errors);
     }

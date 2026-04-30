@@ -9,6 +9,7 @@ use App\DTO\Request\TodoRequest;
 use App\DTO\Response\ImportResult;
 use App\DTO\Response\PaginatedTodoResponse;
 use App\DTO\Response\TodoResponse;
+use App\Entity\TodoList;
 use App\Entity\User;
 use App\Enum\UserRole;
 use App\Security\TodoVoter;
@@ -16,6 +17,7 @@ use App\Service\CsvImportService;
 use App\Service\TodoService;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,11 +46,10 @@ final class TodoController extends AbstractController
             new OA\Response(response: 401, description: 'Unauthorized'),
         ]
     )]
+    #[IsGranted(TodoVoter::READ)]
     #[Route('/tags', name: '_tags', methods: ['GET'])]
     public function tags(): JsonResponse
     {
-        $this->denyAccessUnlessGranted(TodoVoter::READ, null);
-
         /** @var User $user */
         $user = $this->getUser();
 
@@ -77,11 +78,10 @@ final class TodoController extends AbstractController
             new OA\Response(response: 422, description: 'Invalid file'),
         ]
     )]
+    #[IsGranted(TodoVoter::CREATE)]
     #[Route('/import', name: '_import', methods: ['POST'])]
     public function import(Request $request): JsonResponse
     {
-        $this->denyAccessUnlessGranted(TodoVoter::CREATE, null);
-
         /** @var User $user */
         $user = $this->getUser();
 
@@ -109,11 +109,10 @@ final class TodoController extends AbstractController
             new OA\Response(response: 401, description: 'Unauthorized'),
         ]
     )]
+    #[IsGranted(TodoVoter::READ)]
     #[Route('', name: '_list', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
-        $this->denyAccessUnlessGranted(TodoVoter::READ, null);
-
         /** @var User $user */
         $user = $this->getUser();
         $page = max(1, $request->query->getInt('page', 1));
@@ -140,11 +139,10 @@ final class TodoController extends AbstractController
             new OA\Response(response: 422, description: 'Validation error'),
         ]
     )]
+    #[IsGranted(TodoVoter::CREATE)]
     #[Route('', name: '_create', methods: ['POST'])]
     public function create(#[MapRequestPayload] TodoRequest $dto): JsonResponse
     {
-        $this->denyAccessUnlessGranted(TodoVoter::CREATE, null);
-
         /** @var User $user */
         $user = $this->getUser();
 
@@ -164,12 +162,10 @@ final class TodoController extends AbstractController
             new OA\Response(response: 404, description: 'Not found'),
         ]
     )]
+    #[IsGranted(TodoVoter::READ, subject: 'todo')]
     #[Route('/{id}', name: '_one', methods: ['GET'])]
-    public function one(int $id): JsonResponse
+    public function one(#[MapEntity(id: 'id')] TodoList $todo): JsonResponse
     {
-        $todo = $this->todoService->getEntity($id);
-        $this->denyAccessUnlessGranted(TodoVoter::READ, $todo);
-
         return $this->json(TodoResponse::fromEntity($todo));
     }
 
@@ -188,13 +184,11 @@ final class TodoController extends AbstractController
             new OA\Response(response: 422, description: 'Validation error'),
         ]
     )]
+    #[IsGranted(TodoVoter::EDIT, subject: 'todo')]
     #[Route('/{id}', name: '_update', methods: ['PUT'])]
-    public function update(int $id, #[MapRequestPayload] TodoRequest $dto): JsonResponse
+    public function update(#[MapEntity(id: 'id')] TodoList $todo, #[MapRequestPayload] TodoRequest $dto): JsonResponse
     {
-        $todo = $this->todoService->getEntity($id);
-        $this->denyAccessUnlessGranted(TodoVoter::EDIT, $todo);
-
-        return $this->json($this->todoService->update($id, $dto));
+        return $this->json($this->todoService->update($todo->getId(), $dto));
     }
 
     #[OA\Delete(
@@ -210,13 +204,11 @@ final class TodoController extends AbstractController
             new OA\Response(response: 404, description: 'Not found'),
         ]
     )]
+    #[IsGranted(TodoVoter::DELETE, subject: 'todo')]
     #[Route('/{id}', name: '_delete', methods: ['DELETE'])]
-    public function delete(int $id): Response
+    public function delete(#[MapEntity(id: 'id')] TodoList $todo): Response
     {
-        $todo = $this->todoService->getEntity($id);
-        $this->denyAccessUnlessGranted(TodoVoter::DELETE, $todo);
-
-        $this->todoService->delete($id);
+        $this->todoService->delete($todo->getId());
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }

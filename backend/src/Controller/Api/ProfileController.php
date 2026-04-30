@@ -13,14 +13,13 @@ use App\Entity\User;
 use App\Enum\ApiKeyPermission;
 use App\Enum\UserRole;
 use App\Service\ApiKeyService;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\ProfileService;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -31,8 +30,7 @@ final class ProfileController extends AbstractController
 {
     public function __construct(
         private readonly ApiKeyService $apiKeyService,
-        private readonly UserPasswordHasherInterface $passwordHasher,
-        private readonly EntityManagerInterface $em,
+        private readonly ProfileService $profileService,
     ) {
     }
 
@@ -81,8 +79,7 @@ final class ProfileController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $user->setName($dto->name);
-        $this->em->flush();
+        $this->profileService->updateName($user, $dto->name);
 
         return $this->json([
             'id'    => $user->getId(),
@@ -106,12 +103,9 @@ final class ProfileController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        if (!$this->passwordHasher->isPasswordValid($user, $dto->currentPassword)) {
+        if (!$this->profileService->changePassword($user, $dto->currentPassword, $dto->newPassword)) {
             return $this->json(['error' => 'Current password is incorrect.'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-        $user->setPassword($this->passwordHasher->hashPassword($user, $dto->newPassword));
-        $this->em->flush();
 
         return $this->json(null, Response::HTTP_NO_CONTENT);
     }
